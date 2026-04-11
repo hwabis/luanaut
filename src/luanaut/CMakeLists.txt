@@ -8,6 +8,7 @@ find_package(spdlog CONFIG REQUIRED)
 
 add_executable(luanaut
   Main.cc
+  VulkanStuff.cc
 )
 
 set_target_defaults(luanaut)
@@ -16,9 +17,9 @@ target_include_directories(luanaut PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(luanaut 
-  PRIVATE 
-    SDL3::SDL3 
+target_link_libraries(luanaut
+  PRIVATE
+    SDL3::SDL3
     Vulkan::Vulkan
     Vulkan::Headers
     GPUOpen::VulkanMemoryAllocator
