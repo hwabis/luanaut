@@ -20,23 +20,31 @@ class VulkanStuff {
                 vk::DebugUtilsMessageTypeFlagsEXT messageTypes,
                 const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* /*pUserData*/);
+  static auto createSurface(SDL_Window* window,
+                            const vk::raii::Instance& instance)
+      -> vk::raii::SurfaceKHR;
   static auto createPhysicalDevice(const vk::raii::Instance& instance)
       -> vk::raii::PhysicalDevice;
   static auto createLogicalDevice(
+      const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::Device;
   static auto createGraphicsQueue(
+      const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice,
       const vk::raii::Device& logicalDevice) -> vk::raii::Queue;
   static auto findGraphicsQueueIndex(
+      const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t;
+
+  SDL_Window* window_;
 
   vk::raii::Context context_;
   vk::raii::Instance instance_ = nullptr;
   vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
+  vk::raii::SurfaceKHR surface_ = nullptr;
   vk::raii::PhysicalDevice physicalDevice_ = nullptr;
   vk::raii::Device device_ = nullptr;
   vk::raii::Queue graphicsQueue_ = nullptr;
-  SDL_Window* window_;
 };
 
 }  // namespace luanaut

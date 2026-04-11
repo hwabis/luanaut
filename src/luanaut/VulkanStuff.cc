@@ -13,14 +13,13 @@ const std::vector<const char*> requiredDeviceExtension = {
     vk::KHRSwapchainExtensionName};
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
-    : instance_(createInstance(context_)),
+    : window_(window),
+      instance_(createInstance(context_)),
       debugMessenger_(createDebugMessenger(instance_)),
+      surface_(createSurface(window_, instance_)),
       physicalDevice_(createPhysicalDevice(instance_)),
-      device_(createLogicalDevice(physicalDevice_)),
-      graphicsQueue_(createGraphicsQueue(physicalDevice_, device_)),
-      window_(window) {
-  window_ = nullptr;  // todo rm
-}
+      device_(createLogicalDevice(surface_, physicalDevice_)),
+      graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)) {}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -138,6 +137,19 @@ VulkanStuff::debugCallback(
   return vk::False;
 }
 
+auto VulkanStuff::createSurface(SDL_Window* window,
+                                const vk::raii::Instance& instance)
+    -> vk::raii::SurfaceKHR {
+  VkSurfaceKHR rawSurface;
+
+  if (!SDL_Vulkan_CreateSurface(window, *instance, nullptr, &rawSurface)) {
+    throw std::runtime_error("Failed to create surface: " +
+                             std::string(SDL_GetError()));
+  }
+
+  return {instance, rawSurface};
+}
+
 auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
     -> vk::raii::PhysicalDevice {
   auto physicalDevices = instance.enumeratePhysicalDevices();
@@ -188,10 +200,11 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
 }
 
 auto VulkanStuff::createLogicalDevice(
+    const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::Device {
   constexpr float queuePriority = 0.5F;
   vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
-      .queueFamilyIndex = findGraphicsQueueIndex(physicalDevice),
+      .queueFamilyIndex = findGraphicsQueueIndex(surface, physicalDevice),
       .queueCount = 1,
       .pQueuePriorities = &queuePriority};
 
@@ -213,22 +226,26 @@ auto VulkanStuff::createLogicalDevice(
 }
 
 auto VulkanStuff::createGraphicsQueue(
+    const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& logicalDevice) -> vk::raii ::Queue {
-  return {logicalDevice, findGraphicsQueueIndex(physicalDevice), 0};
+    const vk::raii::Device& logicalDevice) -> vk::raii::Queue {
+  return {logicalDevice, findGraphicsQueueIndex(surface, physicalDevice), 0};
 }
 
 auto VulkanStuff::findGraphicsQueueIndex(
+    const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t {
   auto qfps = physicalDevice.getQueueFamilyProperties();
-  auto iter = std::ranges::find_if(qfps, [](auto const& qfp) {
-    return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) !=
-           static_cast<vk::QueueFlags>(0);
-  });
-  if (iter == qfps.end()) {
-    throw std::runtime_error("No graphics queue family found!");
+
+  for (uint32_t i = 0; i < qfps.size(); i++) {
+    if ((qfps[i].queueFlags & vk::QueueFlagBits::eGraphics) &&
+        (physicalDevice.getSurfaceSupportKHR(i, surface) != 0U)) {
+      return i;
+    }
   }
-  return static_cast<uint32_t>(std::distance(qfps.begin(), iter));
+
+  throw std::runtime_error(
+      "Could not find a queue that supports both graphics and present!");
 }
 
 }  // namespace luanaut
