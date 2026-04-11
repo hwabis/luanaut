@@ -1,5 +1,4 @@
 #include "VulkanStuff.h"
-#include <vulkan/vulkan_raii.hpp>
 
 namespace luanaut {
 
@@ -9,7 +8,7 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-const std::vector<const char*> requiredDeviceExtension = {
+const std::vector<const char*> requiredDeviceExtensions = {
     vk::KHRSwapchainExtensionName};
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
@@ -167,7 +166,7 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
         auto availableDeviceExtensions =
             physicalDevice.enumerateDeviceExtensionProperties();
         bool supportsAllRequiredExtensions = std::ranges::all_of(
-            requiredDeviceExtension,
+            requiredDeviceExtensions,
             [&availableDeviceExtensions](auto const& requiredDeviceExtension) {
               return std::ranges::any_of(
                   availableDeviceExtensions,
@@ -211,16 +210,17 @@ auto VulkanStuff::createLogicalDevice(
   vk::StructureChain<vk::PhysicalDeviceFeatures2,
                      vk::PhysicalDeviceVulkan13Features,
                      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-      featureChain = {
-          {}, {.dynamicRendering = 1U}, {.extendedDynamicState = 1U}};
+      featureChain = {{},
+                      {.dynamicRendering = vk::True},
+                      {.extendedDynamicState = vk::True}};
 
   vk::DeviceCreateInfo deviceCreateInfo{
       .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
       .queueCreateInfoCount = 1,
       .pQueueCreateInfos = &deviceQueueCreateInfo,
       .enabledExtensionCount =
-          static_cast<uint32_t>(requiredDeviceExtension.size()),
-      .ppEnabledExtensionNames = requiredDeviceExtension.data()};
+          static_cast<uint32_t>(requiredDeviceExtensions.size()),
+      .ppEnabledExtensionNames = requiredDeviceExtensions.data()};
 
   return {physicalDevice, deviceCreateInfo};
 }
@@ -239,7 +239,7 @@ auto VulkanStuff::findGraphicsQueueIndex(
 
   for (uint32_t i = 0; i < qfps.size(); i++) {
     if ((qfps[i].queueFlags & vk::QueueFlagBits::eGraphics) &&
-        (physicalDevice.getSurfaceSupportKHR(i, surface) != 0U)) {
+        (physicalDevice.getSurfaceSupportKHR(i, surface) == vk::True)) {
       return i;
     }
   }
