@@ -317,10 +317,27 @@ auto VulkanStuff::createSwapchainBundle(
 
   vk::raii::SwapchainKHR swapchain(logicalDevice, swapChainCreateInfo);
   auto images = swapchain.getImages();
+
+  vk::ImageViewCreateInfo imageViewCreateInfo{
+      .viewType = vk::ImageViewType::e2D,
+      .format = swapchainSurfaceFormat.format,
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+
+  std::vector<vk::raii::ImageView> imageViews;
+  for (auto& image : images) {
+    imageViewCreateInfo.image = image;
+    imageViews.emplace_back(logicalDevice, imageViewCreateInfo);
+  }
+
   return {.swapchain = std::move(swapchain),
           .images = std::move(images),
           .format = swapchainSurfaceFormat,
-          .extent = swapchainExtent};
+          .extent = swapchainExtent,
+          .imageViews = std::move(imageViews)};
 }
 
 }  // namespace luanaut

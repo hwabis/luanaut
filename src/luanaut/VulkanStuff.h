@@ -15,6 +15,7 @@ class VulkanStuff {
     std::vector<vk::Image> images;
     vk::SurfaceFormatKHR format;
     vk::Extent2D extent;
+    std::vector<vk::raii::ImageView> imageViews;
   };
 
   static auto createInstance(const vk::raii::Context& context)
