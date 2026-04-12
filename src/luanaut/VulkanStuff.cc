@@ -20,8 +20,8 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       physicalDevice_(createPhysicalDevice(instance_)),
       device_(createLogicalDevice(surface_, physicalDevice_)),
       graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)),
-      swapchain_(createSwapchain(window_, surface_, physicalDevice_, device_)) {
-}
+      swapchainBundle_(
+          createSwapchainBundle(window_, surface_, physicalDevice_, device_)) {}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -251,11 +251,11 @@ auto VulkanStuff::findGraphicsQueueIndex(
       "Could not find a queue that supports both graphics and present!");
 }
 
-auto VulkanStuff::createSwapchain(
+auto VulkanStuff::createSwapchainBundle(
     SDL_Window* window,
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& logicalDevice) -> vk::raii::SwapchainKHR {
+    const vk::raii::Device& logicalDevice) -> SwapchainBundle {
   vk::SurfaceCapabilitiesKHR capabilities =
       physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
@@ -315,7 +315,12 @@ auto VulkanStuff::createSwapchain(
       .presentMode = presentMode,
       .clipped = vk::True};
 
-  return {logicalDevice, swapChainCreateInfo};
+  vk::raii::SwapchainKHR swapchain(logicalDevice, swapChainCreateInfo);
+  auto images = swapchain.getImages();
+  return {.swapchain = std::move(swapchain),
+          .images = std::move(images),
+          .format = swapchainSurfaceFormat,
+          .extent = swapchainExtent};
 }
 
 }  // namespace luanaut

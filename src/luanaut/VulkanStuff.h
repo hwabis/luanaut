@@ -10,6 +10,13 @@ class VulkanStuff {
   VulkanStuff(SDL_Window* window);
 
  private:
+  struct SwapchainBundle {
+    vk::raii::SwapchainKHR swapchain = nullptr;
+    std::vector<vk::Image> images;
+    vk::SurfaceFormatKHR format;
+    vk::Extent2D extent;
+  };
+
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
   static auto createDebugMessenger(const vk::raii::Instance& instance)
@@ -35,11 +42,11 @@ class VulkanStuff {
   static auto findGraphicsQueueIndex(
       const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t;
-  static auto createSwapchain(SDL_Window* window,
-                              const vk::raii::SurfaceKHR& surface,
-                              const vk::raii::PhysicalDevice& physicalDevice,
-                              const vk::raii::Device& logicalDevice)
-      -> vk::raii::SwapchainKHR;
+  static auto createSwapchainBundle(
+      SDL_Window* window,
+      const vk::raii::SurfaceKHR& surface,
+      const vk::raii::PhysicalDevice& physicalDevice,
+      const vk::raii::Device& logicalDevice) -> SwapchainBundle;
 
   SDL_Window* window_;
   vk::raii::Context context_;
@@ -49,7 +56,7 @@ class VulkanStuff {
   vk::raii::PhysicalDevice physicalDevice_ = nullptr;
   vk::raii::Device device_ = nullptr;
   vk::raii::Queue graphicsQueue_ = nullptr;
-  vk::raii::SwapchainKHR swapchain_ = nullptr;
+  SwapchainBundle swapchainBundle_;
 };
 
 }  // namespace luanaut
