@@ -1,4 +1,5 @@
 #include "VulkanStuff.h"
+#include <vulkan/vulkan.hpp>
 
 namespace luanaut {
 
@@ -18,7 +19,9 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       surface_(createSurface(window_, instance_)),
       physicalDevice_(createPhysicalDevice(instance_)),
       device_(createLogicalDevice(surface_, physicalDevice_)),
-      graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)) {}
+      graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)),
+      swapchain_(createSwapchain(window_, surface_, physicalDevice_, device_)) {
+}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -246,6 +249,73 @@ auto VulkanStuff::findGraphicsQueueIndex(
 
   throw std::runtime_error(
       "Could not find a queue that supports both graphics and present!");
+}
+
+auto VulkanStuff::createSwapchain(
+    SDL_Window* window,
+    const vk::raii::SurfaceKHR& surface,
+    const vk::raii::PhysicalDevice& physicalDevice,
+    const vk::raii::Device& logicalDevice) -> vk::raii::SwapchainKHR {
+  vk::SurfaceCapabilitiesKHR capabilities =
+      physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+
+  auto minImageCount = std::max(3U, capabilities.minImageCount);
+  if (capabilities.maxImageCount > 0 &&
+      (capabilities.maxImageCount < minImageCount)) {
+    minImageCount = capabilities.maxImageCount;
+  }
+
+  std::vector<vk::SurfaceFormatKHR> availableFormats =
+      physicalDevice.getSurfaceFormatsKHR(*surface);
+  const auto formatIt =
+      std::ranges::find_if(availableFormats, [](const auto& format) {
+        return format.format == vk::Format::eB8G8R8A8Srgb &&
+               format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+      });
+  auto swapchainSurfaceFormat =
+      formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+
+  vk::Extent2D swapchainExtent;
+  if (capabilities.currentExtent.width !=
+      std::numeric_limits<uint32_t>::max()) {
+    swapchainExtent = capabilities.currentExtent;
+  } else {
+    int width;
+    int height;
+    SDL_GetWindowSizeInPixels(window, &width, &height);
+    swapchainExtent = {
+        .width = std::clamp<uint32_t>(width, capabilities.minImageExtent.width,
+                                      capabilities.maxImageExtent.width),
+        .height =
+            std::clamp<uint32_t>(height, capabilities.minImageExtent.height,
+                                 capabilities.maxImageExtent.height)};
+  }
+
+  std::vector<vk::PresentModeKHR> availablePresentModes =
+      physicalDevice.getSurfacePresentModesKHR(*surface);
+  auto presentMode =
+      std::ranges::any_of(availablePresentModes,
+                          [](const vk::PresentModeKHR value) {
+                            return value == vk::PresentModeKHR::eMailbox;
+                          })
+          ? vk::PresentModeKHR::eMailbox
+          : vk::PresentModeKHR::eFifo;
+
+  vk::SwapchainCreateInfoKHR swapChainCreateInfo{
+      .surface = *surface,
+      .minImageCount = minImageCount,
+      .imageFormat = swapchainSurfaceFormat.format,
+      .imageColorSpace = swapchainSurfaceFormat.colorSpace,
+      .imageExtent = swapchainExtent,
+      .imageArrayLayers = 1,
+      .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+      .imageSharingMode = vk::SharingMode::eExclusive,
+      .preTransform = capabilities.currentTransform,
+      .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+      .presentMode = presentMode,
+      .clipped = vk::True};
+
+  return {logicalDevice, swapChainCreateInfo};
 }
 
 }  // namespace luanaut

@@ -35,9 +35,13 @@ class VulkanStuff {
   static auto findGraphicsQueueIndex(
       const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t;
+  static auto createSwapchain(SDL_Window* window,
+                              const vk::raii::SurfaceKHR& surface,
+                              const vk::raii::PhysicalDevice& physicalDevice,
+                              const vk::raii::Device& logicalDevice)
+      -> vk::raii::SwapchainKHR;
 
   SDL_Window* window_;
-
   vk::raii::Context context_;
   vk::raii::Instance instance_ = nullptr;
   vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
@@ -45,6 +49,7 @@ class VulkanStuff {
   vk::raii::PhysicalDevice physicalDevice_ = nullptr;
   vk::raii::Device device_ = nullptr;
   vk::raii::Queue graphicsQueue_ = nullptr;
+  vk::raii::SwapchainKHR swapchain_ = nullptr;
 };
 
 }  // namespace luanaut
