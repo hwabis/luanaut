@@ -1,5 +1,6 @@
 #include "VulkanStuff.h"
-#include <vulkan/vulkan.hpp>
+#include <array>
+#include <fstream>
 
 namespace luanaut {
 
@@ -21,7 +22,10 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       device_(createLogicalDevice(surface_, physicalDevice_)),
       graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)),
       swapchainBundle_(
-          createSwapchainBundle(window_, surface_, physicalDevice_, device_)) {}
+          createSwapchainBundle(window_, surface_, physicalDevice_, device_)),
+      pipelineLayout_(createPipelineLayout(device_)),
+      graphicsPipeline_(
+          createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)) {}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -211,9 +215,11 @@ auto VulkanStuff::createLogicalDevice(
       .pQueuePriorities = &queuePriority};
 
   vk::StructureChain<vk::PhysicalDeviceFeatures2,
+                     vk::PhysicalDeviceVulkan11Features,
                      vk::PhysicalDeviceVulkan13Features,
                      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
       featureChain = {{},
+                      {.shaderDrawParameters = vk::True},
                       {.dynamicRendering = vk::True},
                       {.extendedDynamicState = vk::True}};
 
@@ -231,8 +237,8 @@ auto VulkanStuff::createLogicalDevice(
 auto VulkanStuff::createGraphicsQueue(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& logicalDevice) -> vk::raii::Queue {
-  return {logicalDevice, findGraphicsQueueIndex(surface, physicalDevice), 0};
+    const vk::raii::Device& device) -> vk::raii::Queue {
+  return {device, findGraphicsQueueIndex(surface, physicalDevice), 0};
 }
 
 auto VulkanStuff::findGraphicsQueueIndex(
@@ -255,7 +261,7 @@ auto VulkanStuff::createSwapchainBundle(
     SDL_Window* window,
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& logicalDevice) -> SwapchainBundle {
+    const vk::raii::Device& device) -> SwapchainBundle {
   vk::SurfaceCapabilitiesKHR capabilities =
       physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
@@ -315,7 +321,7 @@ auto VulkanStuff::createSwapchainBundle(
       .presentMode = presentMode,
       .clipped = vk::True};
 
-  vk::raii::SwapchainKHR swapchain(logicalDevice, swapChainCreateInfo);
+  vk::raii::SwapchainKHR swapchain(device, swapChainCreateInfo);
   auto images = swapchain.getImages();
 
   vk::ImageViewCreateInfo imageViewCreateInfo{
@@ -330,7 +336,7 @@ auto VulkanStuff::createSwapchainBundle(
   std::vector<vk::raii::ImageView> imageViews;
   for (auto& image : images) {
     imageViewCreateInfo.image = image;
-    imageViews.emplace_back(logicalDevice, imageViewCreateInfo);
+    imageViews.emplace_back(device, imageViewCreateInfo);
   }
 
   return {.swapchain = std::move(swapchain),
@@ -338,6 +344,126 @@ auto VulkanStuff::createSwapchainBundle(
           .format = swapchainSurfaceFormat,
           .extent = swapchainExtent,
           .imageViews = std::move(imageViews)};
+}
+
+auto VulkanStuff::createPipelineLayout(const vk::raii::Device& device)
+    -> vk::raii::PipelineLayout {
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{.setLayoutCount = 0,
+                                                  .pushConstantRangeCount = 0};
+  return {device, pipelineLayoutInfo};
+}
+
+auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
+                                         const SwapchainBundle& swapchainBundle,
+                                         const vk::raii::PipelineLayout& layout)
+    -> vk::raii::Pipeline {
+  auto shaderCode = readFile(SHADER_PATH);
+  vk::ShaderModuleCreateInfo createInfo{
+      .codeSize = shaderCode.size() * sizeof(char),
+      .pCode = reinterpret_cast<const uint32_t*>(shaderCode.data())};
+  vk::raii::ShaderModule shaderModule{device, createInfo};
+
+  vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
+      .stage = vk::ShaderStageFlagBits::eVertex,
+      .module = shaderModule,
+      .pName = "vertMain"};
+  vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
+      .stage = vk::ShaderStageFlagBits::eFragment,
+      .module = shaderModule,
+      .pName = "fragMain"};
+  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
+      vertShaderStageInfo, fragShaderStageInfo};
+
+  vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
+      .topology = vk::PrimitiveTopology::eTriangleList};
+
+  vk::Viewport viewport{
+      .x = 0.0f,
+      .y = 0.0f,
+      .width = static_cast<float>(swapchainBundle.extent.width),
+      .height = static_cast<float>(swapchainBundle.extent.height),
+      .minDepth = 0.0f,
+      .maxDepth = 1.0f};
+  vk::Rect2D scissor{.offset = vk::Offset2D{.x = 0, .y = 0},
+                     .extent = swapchainBundle.extent};
+  vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
+                                                    .pViewports = &viewport,
+                                                    .scissorCount = 1,
+                                                    .pScissors = &scissor};
+
+  vk::PipelineRasterizationStateCreateInfo rasterizer{
+      .depthClampEnable = vk::False,
+      .rasterizerDiscardEnable = vk::False,
+      .polygonMode = vk::PolygonMode::eFill,
+      .cullMode = vk::CullModeFlagBits::eBack,
+      .frontFace = vk::FrontFace::eClockwise,
+      .depthBiasEnable = vk::False,
+      .lineWidth = 1.0F};
+
+  vk::PipelineMultisampleStateCreateInfo multisampling{
+      .rasterizationSamples = vk::SampleCountFlagBits::e1,
+      .sampleShadingEnable = vk::False};
+
+  vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+      .blendEnable = vk::True,
+      .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+      .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+      .colorBlendOp = vk::BlendOp::eAdd,
+      .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+      .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+      .alphaBlendOp = vk::BlendOp::eAdd,
+      .colorWriteMask =
+          vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+  vk::PipelineColorBlendStateCreateInfo colorBlending{
+      .logicOpEnable = vk::False,
+      .logicOp = vk::LogicOp::eCopy,
+      .attachmentCount = 1,
+      .pAttachments = &colorBlendAttachment};
+
+  std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
+                                                 vk::DynamicState::eScissor};
+  vk::PipelineDynamicStateCreateInfo dynamicState{
+      .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+      .pDynamicStates = dynamicStates.data()};
+
+  vk::GraphicsPipelineCreateInfo pipelineInfo{
+      .stageCount = 2,
+      .pStages = shaderStages.data(),
+      .pVertexInputState = &vertexInputInfo,
+      .pInputAssemblyState = &inputAssembly,
+      .pViewportState = &viewportState,
+      .pRasterizationState = &rasterizer,
+      .pMultisampleState = &multisampling,
+      .pColorBlendState = &colorBlending,
+      .pDynamicState = &dynamicState,
+      .layout = layout,
+      .renderPass = nullptr};
+  vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo{
+      .colorAttachmentCount = 1,
+      .pColorAttachmentFormats = &swapchainBundle.format.format};
+
+  vk::StructureChain<vk::GraphicsPipelineCreateInfo,
+                     vk::PipelineRenderingCreateInfo>
+      pipelineCreateInfoChain = {pipelineInfo, pipelineRenderingCreateInfo};
+
+  return {device, nullptr,
+          pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()};
+}
+
+auto VulkanStuff::readFile(const std::string& filename) -> std::vector<char> {
+  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+  if (!file.is_open()) {
+    throw std::runtime_error("failed to open file!");
+  }
+
+  std::vector<char> buffer(file.tellg());
+  file.seekg(0, std::ios::beg);
+  file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+  file.close();
+  return buffer;
 }
 
 }  // namespace luanaut
