@@ -7,6 +7,9 @@ namespace luanaut {
 class VulkanStuff {
  public:
   VulkanStuff(SDL_Window* window);
+  ~VulkanStuff();
+
+  auto DrawFrame() -> void;
 
  private:
   struct SwapchainBundle {
@@ -67,8 +70,8 @@ class VulkanStuff {
                              vk::AccessFlags2 srcAccessMask,
                              vk::AccessFlags2 dstAccessMask,
                              vk::PipelineStageFlags2 srcStageMask,
-                             vk::PipelineStageFlags2 dstStageMask);
-  auto recordCommandBuffer(uint32_t imageIndex);
+                             vk::PipelineStageFlags2 dstStageMask) -> void;
+  auto recordCommandBuffer(uint32_t imageIndex) -> void;
 
   SDL_Window* window_;
 
@@ -88,6 +91,10 @@ class VulkanStuff {
 
   vk::raii::CommandPool commandPool_ = nullptr;
   vk::raii::CommandBuffer commandBuffer_ = nullptr;
+
+  vk::raii::Semaphore presentCompleteSemaphore_ = nullptr;
+  vk::raii::Semaphore renderFinishedSemaphore_ = nullptr;
+  vk::raii::Fence drawFence_ = nullptr;
 };
 
 }  // namespace luanaut

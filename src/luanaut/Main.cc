@@ -29,7 +29,7 @@ auto main() -> int {
           running = false;
         }
       }
-      // Vulkan Draw Loop will go here
+      vulkan.DrawFrame();
     }
   }
 

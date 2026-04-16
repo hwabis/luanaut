@@ -28,7 +28,46 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
-      commandBuffer_(createCommandBuffer(device_, commandPool_)) {}
+      commandBuffer_(createCommandBuffer(device_, commandPool_)),
+      presentCompleteSemaphore_(device_, vk::SemaphoreCreateInfo{}),
+      renderFinishedSemaphore_(device_, vk::SemaphoreCreateInfo{}),
+      drawFence_(device_, {.flags = vk::FenceCreateFlagBits::eSignaled}) {}
+
+VulkanStuff::~VulkanStuff() {
+  device_.waitIdle();
+}
+
+auto VulkanStuff::DrawFrame() -> void {
+  auto fenceResult = device_.waitForFences(*drawFence_, vk::True, UINT64_MAX);
+  if (fenceResult != vk::Result::eSuccess) {
+    throw std::runtime_error("failed to wait for fence!");
+  }
+  device_.resetFences(*drawFence_);
+  auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
+      UINT64_MAX, *presentCompleteSemaphore_, nullptr);
+
+  recordCommandBuffer(imageIndex);
+
+  vk::PipelineStageFlags waitDestinationStageMask(
+      vk::PipelineStageFlagBits::eColorAttachmentOutput);
+  const vk::SubmitInfo submitInfo{
+      .waitSemaphoreCount = 1,
+      .pWaitSemaphores = &*presentCompleteSemaphore_,
+      .pWaitDstStageMask = &waitDestinationStageMask,
+      .commandBufferCount = 1,
+      .pCommandBuffers = &*commandBuffer_,
+      .signalSemaphoreCount = 1,
+      .pSignalSemaphores = &*renderFinishedSemaphore_};
+  graphicsQueue_.submit(submitInfo, *drawFence_);
+
+  const vk::PresentInfoKHR presentInfoKHR{
+      .waitSemaphoreCount = 1,
+      .pWaitSemaphores = &*renderFinishedSemaphore_,
+      .swapchainCount = 1,
+      .pSwapchains = &*swapchainBundle_.swapchain,
+      .pImageIndices = &imageIndex};
+  result = graphicsQueue_.presentKHR(presentInfoKHR);
+}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -221,10 +260,11 @@ auto VulkanStuff::createLogicalDevice(
                      vk::PhysicalDeviceVulkan11Features,
                      vk::PhysicalDeviceVulkan13Features,
                      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-      featureChain = {{},
-                      {.shaderDrawParameters = vk::True},
-                      {.dynamicRendering = vk::True},
-                      {.extendedDynamicState = vk::True}};
+      featureChain = {
+          {},
+          {.shaderDrawParameters = vk::True},
+          {.synchronization2 = vk::True, .dynamicRendering = vk::True},
+          {.extendedDynamicState = vk::True}};
 
   vk::DeviceCreateInfo deviceCreateInfo{
       .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
@@ -492,35 +532,7 @@ auto VulkanStuff::createCommandBuffer(const vk::raii::Device& device,
   return std::move(vk::raii::CommandBuffers(device, allocInfo).front());
 }
 
-auto VulkanStuff::transitionImageLayout(uint32_t imageIndex,
-                                        vk::ImageLayout oldLayout,
-                                        vk::ImageLayout newLayout,
-                                        vk::AccessFlags2 srcAccessMask,
-                                        vk::AccessFlags2 dstAccessMask,
-                                        vk::PipelineStageFlags2 srcStageMask,
-                                        vk::PipelineStageFlags2 dstStageMask) {
-  vk::ImageMemoryBarrier2 barrier = {
-      .srcStageMask = srcStageMask,
-      .srcAccessMask = srcAccessMask,
-      .dstStageMask = dstStageMask,
-      .dstAccessMask = dstAccessMask,
-      .oldLayout = oldLayout,
-      .newLayout = newLayout,
-      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image = swapchainBundle_.images[imageIndex],
-      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
-                           .baseMipLevel = 0,
-                           .levelCount = 1,
-                           .baseArrayLayer = 0,
-                           .layerCount = 1}};
-  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
-                                       .imageMemoryBarrierCount = 1,
-                                       .pImageMemoryBarriers = &barrier};
-  commandBuffer_.pipelineBarrier2(dependencyInfo);
-}
-
-auto VulkanStuff::recordCommandBuffer(uint32_t imageIndex) {
+auto VulkanStuff::recordCommandBuffer(uint32_t imageIndex) -> void {
   commandBuffer_.begin({});
 
   transitionImageLayout(imageIndex, vk::ImageLayout::eUndefined,
@@ -562,6 +574,35 @@ auto VulkanStuff::recordCommandBuffer(uint32_t imageIndex) {
                         vk::PipelineStageFlagBits2::eBottomOfPipe);
 
   commandBuffer_.end();
+}
+
+auto VulkanStuff::transitionImageLayout(uint32_t imageIndex,
+                                        vk::ImageLayout oldLayout,
+                                        vk::ImageLayout newLayout,
+                                        vk::AccessFlags2 srcAccessMask,
+                                        vk::AccessFlags2 dstAccessMask,
+                                        vk::PipelineStageFlags2 srcStageMask,
+                                        vk::PipelineStageFlags2 dstStageMask)
+    -> void {
+  vk::ImageMemoryBarrier2 barrier = {
+      .srcStageMask = srcStageMask,
+      .srcAccessMask = srcAccessMask,
+      .dstStageMask = dstStageMask,
+      .dstAccessMask = dstAccessMask,
+      .oldLayout = oldLayout,
+      .newLayout = newLayout,
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .image = swapchainBundle_.images[imageIndex],
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
+                                       .imageMemoryBarrierCount = 1,
+                                       .pImageMemoryBarriers = &barrier};
+  commandBuffer_.pipelineBarrier2(dependencyInfo);
 }
 
 }  // namespace luanaut
