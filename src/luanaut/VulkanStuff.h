@@ -61,6 +61,14 @@ class VulkanStuff {
   static auto createCommandBuffer(const vk::raii::Device& device,
                                   const vk::raii::CommandPool& commandPool)
       -> vk::raii::CommandBuffer;
+  auto transitionImageLayout(uint32_t imageIndex,
+                             vk::ImageLayout oldLayout,
+                             vk::ImageLayout newLayout,
+                             vk::AccessFlags2 srcAccessMask,
+                             vk::AccessFlags2 dstAccessMask,
+                             vk::PipelineStageFlags2 srcStageMask,
+                             vk::PipelineStageFlags2 dstStageMask);
+  auto recordCommandBuffer(uint32_t imageIndex);
 
   SDL_Window* window_;
 
