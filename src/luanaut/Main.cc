@@ -30,6 +30,9 @@ auto main() -> int {
         }
       }
       vulkan.DrawFrame();
+
+      constexpr int sleepTime = 20;
+      std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
     }
   }
 

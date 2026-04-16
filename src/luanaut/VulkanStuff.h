@@ -20,6 +20,12 @@ class VulkanStuff {
     std::vector<vk::raii::ImageView> imageViews;
   };
 
+  struct SyncBundle {
+    std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
+    std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
+    std::vector<vk::raii::Fence> inFlightFences;
+  };
+
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
   static auto createDebugMessenger(const vk::raii::Instance& instance)
@@ -61,17 +67,22 @@ class VulkanStuff {
                                 const vk::raii::Device& device,
                                 const vk::raii::PhysicalDevice& physicalDevice)
       -> vk::raii::CommandPool;
-  static auto createCommandBuffer(const vk::raii::Device& device,
-                                  const vk::raii::CommandPool& commandPool)
-      -> vk::raii::CommandBuffer;
-  auto transitionImageLayout(uint32_t imageIndex,
+  static auto createCommandBuffers(const vk::raii::Device& device,
+                                   const vk::raii::CommandPool& commandPool)
+      -> vk::raii::CommandBuffers;
+  static auto createSyncBundle(const vk::raii::Device& device,
+                               const SwapchainBundle& swapchainBundle)
+      -> SyncBundle;
+
+  auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;
+  auto transitionImageLayout(uint32_t frameIndex,
+                             uint32_t imageIndex,
                              vk::ImageLayout oldLayout,
                              vk::ImageLayout newLayout,
                              vk::AccessFlags2 srcAccessMask,
                              vk::AccessFlags2 dstAccessMask,
                              vk::PipelineStageFlags2 srcStageMask,
                              vk::PipelineStageFlags2 dstStageMask) -> void;
-  auto recordCommandBuffer(uint32_t imageIndex) -> void;
 
   SDL_Window* window_;
 
@@ -90,11 +101,9 @@ class VulkanStuff {
   vk::raii::Pipeline graphicsPipeline_ = nullptr;
 
   vk::raii::CommandPool commandPool_ = nullptr;
-  vk::raii::CommandBuffer commandBuffer_ = nullptr;
+  vk::raii::CommandBuffers commandBuffers_;
 
-  vk::raii::Semaphore presentCompleteSemaphore_ = nullptr;
-  vk::raii::Semaphore renderFinishedSemaphore_ = nullptr;
-  vk::raii::Fence drawFence_ = nullptr;
+  SyncBundle syncBundle_;
 };
 
 }  // namespace luanaut

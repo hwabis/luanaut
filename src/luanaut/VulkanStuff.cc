@@ -14,6 +14,8 @@ constexpr bool enableValidationLayers = true;
 const std::vector<const char*> requiredDeviceExtensions = {
     vk::KHRSwapchainExtensionName};
 
+constexpr int maxFramesInFlight = 2;
+
 VulkanStuff::VulkanStuff(SDL_Window* window)
     : window_(window),
       instance_(createInstance(context_)),
@@ -28,45 +30,50 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
-      commandBuffer_(createCommandBuffer(device_, commandPool_)),
-      presentCompleteSemaphore_(device_, vk::SemaphoreCreateInfo{}),
-      renderFinishedSemaphore_(device_, vk::SemaphoreCreateInfo{}),
-      drawFence_(device_, {.flags = vk::FenceCreateFlagBits::eSignaled}) {}
+      commandBuffers_(createCommandBuffers(device_, commandPool_)),
+      syncBundle_(createSyncBundle(device_, swapchainBundle_)) {}
 
 VulkanStuff::~VulkanStuff() {
   device_.waitIdle();
 }
 
 auto VulkanStuff::DrawFrame() -> void {
-  auto fenceResult = device_.waitForFences(*drawFence_, vk::True, UINT64_MAX);
+  static uint32_t frameIndex = 0;
+
+  auto fenceResult = device_.waitForFences(
+      *syncBundle_.inFlightFences[frameIndex], vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to wait for fence!");
   }
-  device_.resetFences(*drawFence_);
-  auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
-      UINT64_MAX, *presentCompleteSemaphore_, nullptr);
+  device_.resetFences(*syncBundle_.inFlightFences[frameIndex]);
 
-  recordCommandBuffer(imageIndex);
+  auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
+      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[frameIndex], nullptr);
+
+  commandBuffers_[frameIndex].reset();
+  recordCommandBuffer(frameIndex, imageIndex);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*presentCompleteSemaphore_,
+      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[frameIndex],
       .pWaitDstStageMask = &waitDestinationStageMask,
       .commandBufferCount = 1,
-      .pCommandBuffers = &*commandBuffer_,
+      .pCommandBuffers = &*commandBuffers_[frameIndex],
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores = &*renderFinishedSemaphore_};
-  graphicsQueue_.submit(submitInfo, *drawFence_);
+      .pSignalSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex]};
+  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[frameIndex]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*renderFinishedSemaphore_,
+      .pWaitSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex],
       .swapchainCount = 1,
       .pSwapchains = &*swapchainBundle_.swapchain,
       .pImageIndices = &imageIndex};
   result = graphicsQueue_.presentKHR(presentInfoKHR);
+
+  frameIndex = (frameIndex + 1) % maxFramesInFlight;
 }
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
@@ -521,21 +528,43 @@ auto VulkanStuff::createCommandPool(
   return {device, poolInfo};
 }
 
-auto VulkanStuff::createCommandBuffer(const vk::raii::Device& device,
-                                      const vk::raii::CommandPool& commandPool)
-    -> vk::raii::CommandBuffer {
+auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
+                                       const vk::raii::CommandPool& commandPool)
+    -> vk::raii::CommandBuffers {
   vk::CommandBufferAllocateInfo allocInfo{
       .commandPool = commandPool,
       .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1};
+      .commandBufferCount = maxFramesInFlight};
 
-  return std::move(vk::raii::CommandBuffers(device, allocInfo).front());
+  return {device, allocInfo};
 }
 
-auto VulkanStuff::recordCommandBuffer(uint32_t imageIndex) -> void {
-  commandBuffer_.begin({});
+auto VulkanStuff::createSyncBundle(const vk::raii::Device& device,
+                                   const SwapchainBundle& swapchainBundle)
+    -> SyncBundle {
+  SyncBundle syncBundle;
 
-  transitionImageLayout(imageIndex, vk::ImageLayout::eUndefined,
+  for (size_t i = 0; i < swapchainBundle.images.size(); i++) {
+    syncBundle.renderFinishedSemaphores.emplace_back(device,
+                                                     vk::SemaphoreCreateInfo());
+  }
+
+  for (size_t i = 0; i < maxFramesInFlight; i++) {
+    syncBundle.presentCompleteSemaphores.emplace_back(
+        device, vk::SemaphoreCreateInfo());
+    syncBundle.inFlightFences.emplace_back(
+        device,
+        vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+  }
+
+  return syncBundle;
+}
+
+auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex)
+    -> void {
+  commandBuffers_[frameIndex].begin({});
+
+  transitionImageLayout(frameIndex, imageIndex, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eColorAttachmentOptimal, {},
                         vk::AccessFlagBits2::eColorAttachmentWrite,
                         vk::PipelineStageFlagBits2::eColorAttachmentOutput,
@@ -555,28 +584,30 @@ auto VulkanStuff::recordCommandBuffer(uint32_t imageIndex) -> void {
       .colorAttachmentCount = 1,
       .pColorAttachments = &attachmentInfo};
 
-  commandBuffer_.beginRendering(renderingInfo);
-  commandBuffer_.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                              *graphicsPipeline_);
-  commandBuffer_.setViewport(
+  commandBuffers_[frameIndex].beginRendering(renderingInfo);
+  commandBuffers_[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics,
+                                           *graphicsPipeline_);
+  commandBuffers_[frameIndex].setViewport(
       0, vk::Viewport(
              0.0F, 0.0F, static_cast<float>(swapchainBundle_.extent.width),
              static_cast<float>(swapchainBundle_.extent.height), 0.F, 1.F));
-  commandBuffer_.setScissor(
+  commandBuffers_[frameIndex].setScissor(
       0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
-  commandBuffer_.draw(3, 1, 0, 0);
-  commandBuffer_.endRendering();
+  commandBuffers_[frameIndex].draw(3, 1, 0, 0);
+  commandBuffers_[frameIndex].endRendering();
 
-  transitionImageLayout(imageIndex, vk::ImageLayout::eColorAttachmentOptimal,
+  transitionImageLayout(frameIndex, imageIndex,
+                        vk::ImageLayout::eColorAttachmentOptimal,
                         vk::ImageLayout::ePresentSrcKHR,
                         vk::AccessFlagBits2::eColorAttachmentWrite, {},
                         vk::PipelineStageFlagBits2::eColorAttachmentOutput,
                         vk::PipelineStageFlagBits2::eBottomOfPipe);
 
-  commandBuffer_.end();
+  commandBuffers_[frameIndex].end();
 }
 
-auto VulkanStuff::transitionImageLayout(uint32_t imageIndex,
+auto VulkanStuff::transitionImageLayout(uint32_t frameIndex,
+                                        uint32_t imageIndex,
                                         vk::ImageLayout oldLayout,
                                         vk::ImageLayout newLayout,
                                         vk::AccessFlags2 srcAccessMask,
@@ -602,7 +633,7 @@ auto VulkanStuff::transitionImageLayout(uint32_t imageIndex,
   vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
                                        .imageMemoryBarrierCount = 1,
                                        .pImageMemoryBarriers = &barrier};
-  commandBuffer_.pipelineBarrier2(dependencyInfo);
+  commandBuffers_[frameIndex].pipelineBarrier2(dependencyInfo);
 }
 
 }  // namespace luanaut
