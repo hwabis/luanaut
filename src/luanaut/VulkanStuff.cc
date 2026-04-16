@@ -1,4 +1,5 @@
 #include "VulkanStuff.h"
+#include <spdlog/spdlog.h>
 #include <array>
 #include <fstream>
 
@@ -25,7 +26,9 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
           createSwapchainBundle(window_, surface_, physicalDevice_, device_)),
       pipelineLayout_(createPipelineLayout(device_)),
       graphicsPipeline_(
-          createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)) {}
+          createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
+      commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
+      commandBuffer_(createCommandBuffer(device_, commandPool_)) {}
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
@@ -380,12 +383,12 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
       .topology = vk::PrimitiveTopology::eTriangleList};
 
   vk::Viewport viewport{
-      .x = 0.0f,
-      .y = 0.0f,
+      .x = 0.0F,
+      .y = 0.0F,
       .width = static_cast<float>(swapchainBundle.extent.width),
       .height = static_cast<float>(swapchainBundle.extent.height),
-      .minDepth = 0.0f,
-      .maxDepth = 1.0f};
+      .minDepth = 0.0F,
+      .maxDepth = 1.0F};
   vk::Rect2D scissor{.offset = vk::Offset2D{.x = 0, .y = 0},
                      .extent = swapchainBundle.extent};
   vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
@@ -464,6 +467,29 @@ auto VulkanStuff::readFile(const std::string& filename) -> std::vector<char> {
   file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
   file.close();
   return buffer;
+}
+
+auto VulkanStuff::createCommandPool(
+    const vk::raii::SurfaceKHR& surface,
+    const vk::raii::Device& device,
+    const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::CommandPool {
+  auto queueIndex = findGraphicsQueueIndex(surface, physicalDevice);
+  vk::CommandPoolCreateInfo poolInfo{
+      .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+      .queueFamilyIndex = queueIndex};
+
+  return {device, poolInfo};
+}
+
+auto VulkanStuff::createCommandBuffer(const vk::raii::Device& device,
+                                      const vk::raii::CommandPool& commandPool)
+    -> vk::raii::CommandBuffer {
+  vk::CommandBufferAllocateInfo allocInfo{
+      .commandPool = commandPool,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1};
+
+  return std::move(vk::raii::CommandBuffers(device, allocInfo).front());
 }
 
 }  // namespace luanaut

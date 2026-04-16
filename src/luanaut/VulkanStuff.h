@@ -1,6 +1,5 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <SDL3/SDL_vulkan.h>
-#include <spdlog/spdlog.h>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace luanaut {
@@ -55,18 +54,32 @@ class VulkanStuff {
                                      const vk::raii::PipelineLayout& layout)
       -> vk::raii::Pipeline;
   static auto readFile(const std::string& filename) -> std::vector<char>;
+  static auto createCommandPool(const vk::raii::SurfaceKHR& surface,
+                                const vk::raii::Device& device,
+                                const vk::raii::PhysicalDevice& physicalDevice)
+      -> vk::raii::CommandPool;
+  static auto createCommandBuffer(const vk::raii::Device& device,
+                                  const vk::raii::CommandPool& commandPool)
+      -> vk::raii::CommandBuffer;
 
   SDL_Window* window_;
+
   vk::raii::Context context_;
   vk::raii::Instance instance_ = nullptr;
   vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
+
   vk::raii::SurfaceKHR surface_ = nullptr;
   vk::raii::PhysicalDevice physicalDevice_ = nullptr;
   vk::raii::Device device_ = nullptr;
   vk::raii::Queue graphicsQueue_ = nullptr;
+
   SwapchainBundle swapchainBundle_;
+
   vk::raii::PipelineLayout pipelineLayout_ = nullptr;
   vk::raii::Pipeline graphicsPipeline_ = nullptr;
+
+  vk::raii::CommandPool commandPool_ = nullptr;
+  vk::raii::CommandBuffer commandBuffer_ = nullptr;
 };
 
 }  // namespace luanaut
