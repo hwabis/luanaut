@@ -1,5 +1,7 @@
 #include "VulkanStuff.h"
+#include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
+#include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
 
@@ -38,32 +40,38 @@ VulkanStuff::~VulkanStuff() {
 }
 
 auto VulkanStuff::DrawFrame() -> void {
-  static uint32_t frameIndex = 0;
-
   auto fenceResult = device_.waitForFences(
-      *syncBundle_.inFlightFences[frameIndex], vk::True, UINT64_MAX);
+      *syncBundle_.inFlightFences[frameIndex_], vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to wait for fence!");
   }
-  device_.resetFences(*syncBundle_.inFlightFences[frameIndex]);
 
   auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
-      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[frameIndex], nullptr);
+      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[frameIndex_], nullptr);
+  if (result == vk::Result::eErrorOutOfDateKHR) {
+    recreateSwapchain();
+    return;
+  }
+  if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+    throw std::runtime_error("failed to acquire swap chain image!");
+  }
 
-  commandBuffers_[frameIndex].reset();
-  recordCommandBuffer(frameIndex, imageIndex);
+  device_.resetFences(*syncBundle_.inFlightFences[frameIndex_]);
+
+  commandBuffers_[frameIndex_].reset();
+  recordCommandBuffer(frameIndex_, imageIndex);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[frameIndex],
+      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[frameIndex_],
       .pWaitDstStageMask = &waitDestinationStageMask,
       .commandBufferCount = 1,
-      .pCommandBuffers = &*commandBuffers_[frameIndex],
+      .pCommandBuffers = &*commandBuffers_[frameIndex_],
       .signalSemaphoreCount = 1,
       .pSignalSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex]};
-  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[frameIndex]);
+  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[frameIndex_]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
@@ -72,15 +80,24 @@ auto VulkanStuff::DrawFrame() -> void {
       .pSwapchains = &*swapchainBundle_.swapchain,
       .pImageIndices = &imageIndex};
   result = graphicsQueue_.presentKHR(presentInfoKHR);
+  if (result == vk::Result::eSuboptimalKHR ||
+      result == vk::Result::eErrorOutOfDateKHR || framebufferResized_) {
+    framebufferResized_ = false;
+    recreateSwapchain();
+  }
 
-  frameIndex = (frameIndex + 1) % maxFramesInFlight;
+  frameIndex_ = (frameIndex_ + 1) % maxFramesInFlight;
 }
 
-auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex)
-    -> void {
-  commandBuffers_[frameIndex].begin({});
+auto VulkanStuff::NotifyResize() -> void {
+  framebufferResized_ = true;
+}
 
-  transitionImageLayout(frameIndex, imageIndex, vk::ImageLayout::eUndefined,
+auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex_, uint32_t imageIndex)
+    -> void {
+  commandBuffers_[frameIndex_].begin({});
+
+  transitionImageLayout(frameIndex_, imageIndex, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eColorAttachmentOptimal, {},
                         vk::AccessFlagBits2::eColorAttachmentWrite,
                         vk::PipelineStageFlagBits2::eColorAttachmentOutput,
@@ -100,29 +117,29 @@ auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex)
       .colorAttachmentCount = 1,
       .pColorAttachments = &attachmentInfo};
 
-  commandBuffers_[frameIndex].beginRendering(renderingInfo);
-  commandBuffers_[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics,
-                                           *graphicsPipeline_);
-  commandBuffers_[frameIndex].setViewport(
+  commandBuffers_[frameIndex_].beginRendering(renderingInfo);
+  commandBuffers_[frameIndex_].bindPipeline(vk::PipelineBindPoint::eGraphics,
+                                            *graphicsPipeline_);
+  commandBuffers_[frameIndex_].setViewport(
       0, vk::Viewport(
              0.0F, 0.0F, static_cast<float>(swapchainBundle_.extent.width),
              static_cast<float>(swapchainBundle_.extent.height), 0.F, 1.F));
-  commandBuffers_[frameIndex].setScissor(
+  commandBuffers_[frameIndex_].setScissor(
       0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
-  commandBuffers_[frameIndex].draw(3, 1, 0, 0);
-  commandBuffers_[frameIndex].endRendering();
+  commandBuffers_[frameIndex_].draw(3, 1, 0, 0);
+  commandBuffers_[frameIndex_].endRendering();
 
-  transitionImageLayout(frameIndex, imageIndex,
+  transitionImageLayout(frameIndex_, imageIndex,
                         vk::ImageLayout::eColorAttachmentOptimal,
                         vk::ImageLayout::ePresentSrcKHR,
                         vk::AccessFlagBits2::eColorAttachmentWrite, {},
                         vk::PipelineStageFlagBits2::eColorAttachmentOutput,
                         vk::PipelineStageFlagBits2::eBottomOfPipe);
 
-  commandBuffers_[frameIndex].end();
+  commandBuffers_[frameIndex_].end();
 }
 
-auto VulkanStuff::transitionImageLayout(uint32_t frameIndex,
+auto VulkanStuff::transitionImageLayout(uint32_t frameIndex_,
                                         uint32_t imageIndex,
                                         vk::ImageLayout oldLayout,
                                         vk::ImageLayout newLayout,
@@ -149,7 +166,20 @@ auto VulkanStuff::transitionImageLayout(uint32_t frameIndex,
   vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
                                        .imageMemoryBarrierCount = 1,
                                        .pImageMemoryBarriers = &barrier};
-  commandBuffers_[frameIndex].pipelineBarrier2(dependencyInfo);
+  commandBuffers_[frameIndex_].pipelineBarrier2(dependencyInfo);
+}
+
+auto VulkanStuff::recreateSwapchain() -> void {
+  // SDL_GetWindowSizeInPixels does not return 0x0 on minimize T_T
+  vk::SurfaceCapabilitiesKHR caps =
+      physicalDevice_.getSurfaceCapabilitiesKHR(*surface_);
+  if (caps.currentExtent.width == 0 || caps.currentExtent.height == 0) {
+    return;
+  }
+
+  device_.waitIdle();
+  swapchainBundle_ = createSwapchainBundle(window_, surface_, physicalDevice_,
+                                           device_, swapchainBundle_.swapchain);
 }
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
@@ -387,7 +417,8 @@ auto VulkanStuff::createSwapchainBundle(
     SDL_Window* window,
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& device) -> SwapchainBundle {
+    const vk::raii::Device& device,
+    vk::SwapchainKHR oldSwapchain) -> SwapchainBundle {
   vk::SurfaceCapabilitiesKHR capabilities =
       physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
@@ -445,7 +476,8 @@ auto VulkanStuff::createSwapchainBundle(
       .preTransform = capabilities.currentTransform,
       .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
       .presentMode = presentMode,
-      .clipped = vk::True};
+      .clipped = vk::True,
+      .oldSwapchain = oldSwapchain};
 
   vk::raii::SwapchainKHR swapchain(device, swapChainCreateInfo);
   auto images = swapchain.getImages();

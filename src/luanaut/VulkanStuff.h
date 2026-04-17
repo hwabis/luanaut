@@ -1,4 +1,5 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS  // ← add this
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -10,10 +11,11 @@ class VulkanStuff {
   ~VulkanStuff();
 
   auto DrawFrame() -> void;
+  auto NotifyResize() -> void;
 
  private:
   struct SwapchainBundle {
-    vk::raii::SwapchainKHR swapchain = nullptr;
+    vk::raii::SwapchainKHR swapchain;
     std::vector<vk::Image> images;
     vk::SurfaceFormatKHR format;
     vk::Extent2D extent;
@@ -35,6 +37,7 @@ class VulkanStuff {
                              vk::AccessFlags2 dstAccessMask,
                              vk::PipelineStageFlags2 srcStageMask,
                              vk::PipelineStageFlags2 dstStageMask) -> void;
+  auto recreateSwapchain() -> void;
 
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
@@ -65,7 +68,8 @@ class VulkanStuff {
       SDL_Window* window,
       const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice,
-      const vk::raii::Device& device) -> SwapchainBundle;
+      const vk::raii::Device& device,
+      vk::SwapchainKHR oldSwapchain = VK_NULL_HANDLE) -> SwapchainBundle;
   static auto createPipelineLayout(const vk::raii::Device& device)
       -> vk::raii::PipelineLayout;
   static auto createGraphicsPipeline(const vk::raii::Device& device,
@@ -87,23 +91,26 @@ class VulkanStuff {
   SDL_Window* window_;
 
   vk::raii::Context context_;
-  vk::raii::Instance instance_ = nullptr;
-  vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
+  vk::raii::Instance instance_;
+  vk::raii::DebugUtilsMessengerEXT debugMessenger_;
 
-  vk::raii::SurfaceKHR surface_ = nullptr;
-  vk::raii::PhysicalDevice physicalDevice_ = nullptr;
-  vk::raii::Device device_ = nullptr;
-  vk::raii::Queue graphicsQueue_ = nullptr;
+  vk::raii::SurfaceKHR surface_;
+  vk::raii::PhysicalDevice physicalDevice_;
+  vk::raii::Device device_;
+  vk::raii::Queue graphicsQueue_;
 
   SwapchainBundle swapchainBundle_;
 
-  vk::raii::PipelineLayout pipelineLayout_ = nullptr;
-  vk::raii::Pipeline graphicsPipeline_ = nullptr;
+  vk::raii::PipelineLayout pipelineLayout_;
+  vk::raii::Pipeline graphicsPipeline_;
 
-  vk::raii::CommandPool commandPool_ = nullptr;
+  vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
 
   SyncBundle syncBundle_;
+
+  uint32_t frameIndex_ = 0;
+  bool framebufferResized_ = false;
 };
 
 }  // namespace luanaut

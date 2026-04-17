@@ -28,6 +28,9 @@ auto main() -> int {
         if (event.type == SDL_EVENT_QUIT) {
           running = false;
         }
+        if (event.type == SDL_EVENT_WINDOW_RESIZED) {
+          vulkan.NotifyResize();
+        }
       }
       vulkan.DrawFrame();
 
