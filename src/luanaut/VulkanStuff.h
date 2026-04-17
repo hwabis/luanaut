@@ -26,6 +26,16 @@ class VulkanStuff {
     std::vector<vk::raii::Fence> inFlightFences;
   };
 
+  auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;
+  auto transitionImageLayout(uint32_t frameIndex,
+                             uint32_t imageIndex,
+                             vk::ImageLayout oldLayout,
+                             vk::ImageLayout newLayout,
+                             vk::AccessFlags2 srcAccessMask,
+                             vk::AccessFlags2 dstAccessMask,
+                             vk::PipelineStageFlags2 srcStageMask,
+                             vk::PipelineStageFlags2 dstStageMask) -> void;
+
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
   static auto createDebugMessenger(const vk::raii::Instance& instance)
@@ -73,16 +83,6 @@ class VulkanStuff {
   static auto createSyncBundle(const vk::raii::Device& device,
                                const SwapchainBundle& swapchainBundle)
       -> SyncBundle;
-
-  auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;
-  auto transitionImageLayout(uint32_t frameIndex,
-                             uint32_t imageIndex,
-                             vk::ImageLayout oldLayout,
-                             vk::ImageLayout newLayout,
-                             vk::AccessFlags2 srcAccessMask,
-                             vk::AccessFlags2 dstAccessMask,
-                             vk::PipelineStageFlags2 srcStageMask,
-                             vk::PipelineStageFlags2 dstStageMask) -> void;
 
   SDL_Window* window_;
 
