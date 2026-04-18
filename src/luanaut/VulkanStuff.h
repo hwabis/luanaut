@@ -1,7 +1,6 @@
 #pragma once
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 #include <SDL3/SDL_vulkan.h>
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace luanaut {
@@ -37,7 +36,8 @@ class VulkanStuff {
   static auto recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
                                   const SwapchainBundle::ImageInfo& imageInfo,
                                   const vk::Extent2D& extent,
-                                  const vk::raii::Pipeline& pipeline) -> void;
+                                  const vk::raii::Pipeline& pipeline,
+                                  VkBuffer vertexBuffer) -> void;
   static auto transitionToColorAttachment(const vk::raii::CommandBuffer& cmd,
                                           vk::Image image) -> void;
   static auto transitionToPresent(const vk::raii::CommandBuffer& cmd,
@@ -104,6 +104,10 @@ class VulkanStuff {
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
   std::vector<CommandBufferInfo> commandBuffersInfo_;
+
+  VmaAllocator allocator_;
+  VkBuffer vertexBuffer_;
+  VmaAllocation vertexAllocation_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;

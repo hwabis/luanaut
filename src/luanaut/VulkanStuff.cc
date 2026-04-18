@@ -1,9 +1,13 @@
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
+#define VMA_IMPLEMENTATION
 #include "VulkanStuff.h"
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
 #include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
+#include <vulkan/vulkan.hpp>
 #include "Vertex.h"
 
 namespace luanaut {
@@ -41,10 +45,84 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
-      commandBuffersInfo_(createCommandBuffersInfo(device_)) {}
+      commandBuffersInfo_(createCommandBuffersInfo(device_)) {
+  VmaAllocatorCreateInfo allocatorInfo{
+      .flags = 0,
+      .physicalDevice = *physicalDevice_,
+      .device = *device_,
+      .preferredLargeHeapBlockSize = 0,
+      .pAllocationCallbacks = nullptr,
+      .pDeviceMemoryCallbacks = nullptr,
+      .pHeapSizeLimit = nullptr,
+      .pVulkanFunctions = nullptr,
+      .instance = *instance_,
+      .vulkanApiVersion = vk::ApiVersion13,
+      .pTypeExternalMemoryHandleTypes = nullptr,
+  };
+  vmaCreateAllocator(&allocatorInfo, &allocator_);
+
+  VkBuffer stagingBuffer;
+  VmaAllocation stagingAllocation;
+  VkBufferCreateInfo stagingInfo{
+      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .size = sizeof(Vertex) * vertices.size(),
+      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+  };
+  VmaAllocationCreateInfo stagingAllocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
+                  &stagingAllocation, nullptr);
+
+  void* data;
+  vmaMapMemory(allocator_, stagingAllocation, &data);
+  memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
+  vmaUnmapMemory(allocator_, stagingAllocation);
+
+  VkBufferCreateInfo vertexBufferInfo = stagingInfo;
+  vertexBufferInfo.usage =
+      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VmaAllocationCreateInfo vertexAllocInfo = stagingAllocInfo;
+  vertexAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  vmaCreateBuffer(allocator_, &vertexBufferInfo, &vertexAllocInfo,
+                  &vertexBuffer_, &vertexAllocation_, nullptr);
+
+  // add [copy staging to vertex buffer] to the command buffer; submit
+  vk::CommandBufferAllocateInfo allocInfo{
+      .commandPool = commandPool_,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1};
+  auto transferCmdBuf =
+      std::move(vk::raii::CommandBuffers(device_, allocInfo).front());
+  transferCmdBuf.begin(
+      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  transferCmdBuf.copyBuffer(
+      stagingBuffer, vertexBuffer_,
+      vk::BufferCopy{.size = sizeof(Vertex) * vertices.size()});
+  transferCmdBuf.end();
+  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
+                            .pCommandBuffers = &*transferCmdBuf};
+  graphicsQueue_.submit(submitInfo);
+  graphicsQueue_.waitIdle();
+  vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
+}
 
 VulkanStuff::~VulkanStuff() {
   device_.waitIdle();
+  vmaDestroyBuffer(allocator_, vertexBuffer_, vertexAllocation_);
+  vmaDestroyAllocator(allocator_);
 }
 
 auto VulkanStuff::DrawFrame() -> void {
@@ -71,7 +149,8 @@ auto VulkanStuff::DrawFrame() -> void {
   commandBuffers_[commandBufferIndex_].reset();
   recordCommandBuffer(commandBuffers_[commandBufferIndex_],
                       swapchainBundle_.imagesInfo[imageIndex],
-                      swapchainBundle_.extent, graphicsPipeline_);
+                      swapchainBundle_.extent, graphicsPipeline_,
+                      vertexBuffer_);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
@@ -126,7 +205,8 @@ auto VulkanStuff::recordCommandBuffer(
     const vk::raii::CommandBuffer& cmd,
     const SwapchainBundle::ImageInfo& imageInfo,
     const vk::Extent2D& extent,
-    const vk::raii::Pipeline& pipeline) -> void {
+    const vk::raii::Pipeline& pipeline,
+    VkBuffer vertexBuffer) -> void {
   cmd.begin({});
 
   transitionToColorAttachment(cmd, imageInfo.image);
@@ -149,7 +229,8 @@ auto VulkanStuff::recordCommandBuffer(
   cmd.setViewport(0, vk::Viewport(0.0F, 0.0F, static_cast<float>(extent.width),
                                   static_cast<float>(extent.height), 0.F, 1.F));
   cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, extent));
-  cmd.draw(3, 1, 0, 0);
+  cmd.bindVertexBuffers(0, vk::Buffer(vertexBuffer), {0});
+  cmd.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
   cmd.endRendering();
 
   transitionToPresent(cmd, imageInfo.image);
