@@ -63,7 +63,9 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  recordCommandBuffer(commandBufferIndex_, imageIndex);
+  recordCommandBuffer(commandBuffers_[commandBufferIndex_],
+                      swapchainBundle_.imagesInfo[imageIndex],
+                      swapchainBundle_.extent, graphicsPipeline_);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
@@ -101,82 +103,6 @@ auto VulkanStuff::NotifyResize() -> void {
   framebufferResized_ = true;
 }
 
-auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex_, uint32_t imageIndex)
-    -> void {
-  commandBuffers_[frameIndex_].begin({});
-
-  transitionImageLayout(frameIndex_, imageIndex, vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::eColorAttachmentOptimal, {},
-                        vk::AccessFlagBits2::eColorAttachmentWrite,
-                        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                        vk::PipelineStageFlagBits2::eColorAttachmentOutput);
-
-  vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
-  vk::RenderingAttachmentInfo attachmentInfo{
-      .imageView = *swapchainBundle_.imagesInfo[imageIndex].imageView,
-      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-      .loadOp = vk::AttachmentLoadOp::eClear,
-      .storeOp = vk::AttachmentStoreOp::eStore,
-      .clearValue = clearColor};
-  vk::RenderingInfo renderingInfo{
-      .renderArea = {.offset = {.x = 0, .y = 0},
-                     .extent = swapchainBundle_.extent},
-      .layerCount = 1,
-      .colorAttachmentCount = 1,
-      .pColorAttachments = &attachmentInfo};
-
-  commandBuffers_[frameIndex_].beginRendering(renderingInfo);
-  commandBuffers_[frameIndex_].bindPipeline(vk::PipelineBindPoint::eGraphics,
-                                            *graphicsPipeline_);
-  commandBuffers_[frameIndex_].setViewport(
-      0, vk::Viewport(
-             0.0F, 0.0F, static_cast<float>(swapchainBundle_.extent.width),
-             static_cast<float>(swapchainBundle_.extent.height), 0.F, 1.F));
-  commandBuffers_[frameIndex_].setScissor(
-      0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
-  commandBuffers_[frameIndex_].draw(3, 1, 0, 0);
-  commandBuffers_[frameIndex_].endRendering();
-
-  transitionImageLayout(frameIndex_, imageIndex,
-                        vk::ImageLayout::eColorAttachmentOptimal,
-                        vk::ImageLayout::ePresentSrcKHR,
-                        vk::AccessFlagBits2::eColorAttachmentWrite, {},
-                        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                        vk::PipelineStageFlagBits2::eBottomOfPipe);
-
-  commandBuffers_[frameIndex_].end();
-}
-
-auto VulkanStuff::transitionImageLayout(uint32_t frameIndex_,
-                                        uint32_t imageIndex,
-                                        vk::ImageLayout oldLayout,
-                                        vk::ImageLayout newLayout,
-                                        vk::AccessFlags2 srcAccessMask,
-                                        vk::AccessFlags2 dstAccessMask,
-                                        vk::PipelineStageFlags2 srcStageMask,
-                                        vk::PipelineStageFlags2 dstStageMask)
-    -> void {
-  vk::ImageMemoryBarrier2 barrier = {
-      .srcStageMask = srcStageMask,
-      .srcAccessMask = srcAccessMask,
-      .dstStageMask = dstStageMask,
-      .dstAccessMask = dstAccessMask,
-      .oldLayout = oldLayout,
-      .newLayout = newLayout,
-      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image = swapchainBundle_.imagesInfo[imageIndex].image,
-      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
-                           .baseMipLevel = 0,
-                           .levelCount = 1,
-                           .baseArrayLayer = 0,
-                           .layerCount = 1}};
-  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
-                                       .imageMemoryBarrierCount = 1,
-                                       .pImageMemoryBarriers = &barrier};
-  commandBuffers_[frameIndex_].pipelineBarrier2(dependencyInfo);
-}
-
 auto VulkanStuff::recreateSwapchain() -> void {
   // SDL_GetWindowSizeInPixels does not return 0x0 on minimize T_T
   vk::SurfaceCapabilitiesKHR caps =
@@ -188,6 +114,88 @@ auto VulkanStuff::recreateSwapchain() -> void {
   device_.waitIdle();
   swapchainBundle_ = createSwapchainBundle(window_, surface_, physicalDevice_,
                                            device_, swapchainBundle_.swapchain);
+}
+
+auto VulkanStuff::recordCommandBuffer(
+    const vk::raii::CommandBuffer& cmd,
+    const SwapchainBundle::ImageInfo& imageInfo,
+    const vk::Extent2D& extent,
+    const vk::raii::Pipeline& pipeline) -> void {
+  cmd.begin({});
+
+  transitionToColorAttachment(cmd, imageInfo.image);
+
+  vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
+  vk::RenderingAttachmentInfo attachmentInfo{
+      .imageView = *imageInfo.imageView,
+      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .loadOp = vk::AttachmentLoadOp::eClear,
+      .storeOp = vk::AttachmentStoreOp::eStore,
+      .clearValue = clearColor};
+  vk::RenderingInfo renderingInfo{
+      .renderArea = {.offset = {.x = 0, .y = 0}, .extent = extent},
+      .layerCount = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments = &attachmentInfo};
+
+  cmd.beginRendering(renderingInfo);
+  cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
+  cmd.setViewport(0, vk::Viewport(0.0F, 0.0F, static_cast<float>(extent.width),
+                                  static_cast<float>(extent.height), 0.F, 1.F));
+  cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, extent));
+  cmd.draw(3, 1, 0, 0);
+  cmd.endRendering();
+
+  transitionToPresent(cmd, imageInfo.image);
+
+  cmd.end();
+}
+
+auto VulkanStuff::transitionToColorAttachment(
+    const vk::raii::CommandBuffer& cmd,
+    vk::Image image) -> void {
+  vk::ImageMemoryBarrier2 barrier = {
+      .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+      .srcAccessMask = {},
+      .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+      .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+      .oldLayout = vk::ImageLayout::eUndefined,
+      .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .image = image,
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
+                                       .imageMemoryBarrierCount = 1,
+                                       .pImageMemoryBarriers = &barrier};
+  cmd.pipelineBarrier2(dependencyInfo);
+}
+
+auto VulkanStuff::transitionToPresent(const vk::raii::CommandBuffer& cmd,
+                                      vk::Image image) -> void {
+  vk::ImageMemoryBarrier2 barrier = {
+      .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+      .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+      .dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe,
+      .dstAccessMask = {},
+      .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .newLayout = vk::ImageLayout::ePresentSrcKHR,
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .image = image,
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
+                                       .imageMemoryBarrierCount = 1,
+                                       .pImageMemoryBarriers = &barrier};
+  cmd.pipelineBarrier2(dependencyInfo);
 }
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)

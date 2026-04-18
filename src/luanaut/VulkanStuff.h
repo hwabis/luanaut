@@ -31,16 +31,16 @@ class VulkanStuff {
     vk::raii::Semaphore presentCompleteSemaphore;
   };
 
-  auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;
-  auto transitionImageLayout(uint32_t frameIndex,
-                             uint32_t imageIndex,
-                             vk::ImageLayout oldLayout,
-                             vk::ImageLayout newLayout,
-                             vk::AccessFlags2 srcAccessMask,
-                             vk::AccessFlags2 dstAccessMask,
-                             vk::PipelineStageFlags2 srcStageMask,
-                             vk::PipelineStageFlags2 dstStageMask) -> void;
   auto recreateSwapchain() -> void;
+
+  static auto recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
+                                  const SwapchainBundle::ImageInfo& imageInfo,
+                                  const vk::Extent2D& extent,
+                                  const vk::raii::Pipeline& pipeline) -> void;
+  static auto transitionToColorAttachment(const vk::raii::CommandBuffer& cmd,
+                                          vk::Image image) -> void;
+  static auto transitionToPresent(const vk::raii::CommandBuffer& cmd,
+                                  vk::Image image) -> void;
 
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
