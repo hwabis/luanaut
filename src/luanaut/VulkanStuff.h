@@ -25,7 +25,7 @@ class VulkanStuff {
   struct SyncBundle {
     std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
     std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
-    std::vector<vk::raii::Fence> inFlightFences;
+    std::vector<vk::raii::Fence> commandBufferFences;
   };
 
   auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;

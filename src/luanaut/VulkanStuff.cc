@@ -43,7 +43,7 @@ VulkanStuff::~VulkanStuff() {
 
 auto VulkanStuff::DrawFrame() -> void {
   auto fenceResult = device_.waitForFences(
-      *syncBundle_.inFlightFences[commandBufferIndex_], vk::True, UINT64_MAX);
+      *syncBundle_.commandBufferFences[commandBufferIndex_], vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to wait for fence!");
   }
@@ -58,7 +58,7 @@ auto VulkanStuff::DrawFrame() -> void {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  device_.resetFences(*syncBundle_.inFlightFences[commandBufferIndex_]);
+  device_.resetFences(*syncBundle_.commandBufferFences[commandBufferIndex_]);
 
   commandBuffers_[commandBufferIndex_].reset();
   recordCommandBuffer(commandBufferIndex_, imageIndex);
@@ -73,7 +73,7 @@ auto VulkanStuff::DrawFrame() -> void {
       .pCommandBuffers = &*commandBuffers_[commandBufferIndex_],
       .signalSemaphoreCount = 1,
       .pSignalSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex]};
-  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[commandBufferIndex_]);
+  graphicsQueue_.submit(submitInfo, *syncBundle_.commandBufferFences[commandBufferIndex_]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
@@ -650,7 +650,7 @@ auto VulkanStuff::createSyncBundle(const vk::raii::Device& device,
   for (size_t i = 0; i < commandBufferCount; i++) {
     syncBundle.presentCompleteSemaphores.emplace_back(
         device, vk::SemaphoreCreateInfo());
-    syncBundle.inFlightFences.emplace_back(
+    syncBundle.commandBufferFences.emplace_back(
         device,
         vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
   }
