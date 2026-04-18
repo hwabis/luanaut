@@ -103,7 +103,7 @@ class VulkanStuff {
 
   SyncBundle syncBundle_;
 
-  uint32_t frameIndex_ = 0;
+  uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;
 };
 

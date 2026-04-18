@@ -16,7 +16,7 @@ constexpr bool enableValidationLayers = true;
 const std::vector<const char*> requiredDeviceExtensions = {
     vk::KHRSwapchainExtensionName};
 
-constexpr int maxFramesInFlight = 2;
+constexpr int commandBufferCount = 2;
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
     : window_(window),
@@ -43,13 +43,13 @@ VulkanStuff::~VulkanStuff() {
 
 auto VulkanStuff::DrawFrame() -> void {
   auto fenceResult = device_.waitForFences(
-      *syncBundle_.inFlightFences[frameIndex_], vk::True, UINT64_MAX);
+      *syncBundle_.inFlightFences[commandBufferIndex_], vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to wait for fence!");
   }
 
   auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
-      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[frameIndex_], nullptr);
+      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[commandBufferIndex_], nullptr);
   if (result == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapchain();
     return;
@@ -58,22 +58,22 @@ auto VulkanStuff::DrawFrame() -> void {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  device_.resetFences(*syncBundle_.inFlightFences[frameIndex_]);
+  device_.resetFences(*syncBundle_.inFlightFences[commandBufferIndex_]);
 
-  commandBuffers_[frameIndex_].reset();
-  recordCommandBuffer(frameIndex_, imageIndex);
+  commandBuffers_[commandBufferIndex_].reset();
+  recordCommandBuffer(commandBufferIndex_, imageIndex);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[frameIndex_],
+      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[commandBufferIndex_],
       .pWaitDstStageMask = &waitDestinationStageMask,
       .commandBufferCount = 1,
-      .pCommandBuffers = &*commandBuffers_[frameIndex_],
+      .pCommandBuffers = &*commandBuffers_[commandBufferIndex_],
       .signalSemaphoreCount = 1,
       .pSignalSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex]};
-  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[frameIndex_]);
+  graphicsQueue_.submit(submitInfo, *syncBundle_.inFlightFences[commandBufferIndex_]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
@@ -88,7 +88,7 @@ auto VulkanStuff::DrawFrame() -> void {
     recreateSwapchain();
   }
 
-  frameIndex_ = (frameIndex_ + 1) % maxFramesInFlight;
+  commandBufferIndex_ = (commandBufferIndex_ + 1) % commandBufferCount;
 }
 
 auto VulkanStuff::NotifyResize() -> void {
@@ -632,7 +632,7 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
   vk::CommandBufferAllocateInfo allocInfo{
       .commandPool = commandPool,
       .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = maxFramesInFlight};
+      .commandBufferCount = commandBufferCount};
 
   return {device, allocInfo};
 }
@@ -647,7 +647,7 @@ auto VulkanStuff::createSyncBundle(const vk::raii::Device& device,
                                                      vk::SemaphoreCreateInfo());
   }
 
-  for (size_t i = 0; i < maxFramesInFlight; i++) {
+  for (size_t i = 0; i < commandBufferCount; i++) {
     syncBundle.presentCompleteSemaphores.emplace_back(
         device, vk::SemaphoreCreateInfo());
     syncBundle.inFlightFences.emplace_back(
