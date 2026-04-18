@@ -25,10 +25,12 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       surface_(createSurface(window_, instance_)),
       physicalDevice_(createPhysicalDevice(instance_)),
       device_(createLogicalDevice(surface_, physicalDevice_)),
-      graphicsQueue_(createGraphicsQueue(surface_, physicalDevice_, device_)),
+      graphicsQueue_(device_,
+                     findGraphicsQueueIndex(surface_, physicalDevice_),
+                     0),
       swapchainBundle_(
           createSwapchainBundle(window_, surface_, physicalDevice_, device_)),
-      pipelineLayout_(createPipelineLayout(device_)),
+      pipelineLayout_(device_, {}),
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
@@ -184,30 +186,25 @@ auto VulkanStuff::recreateSwapchain() -> void {
 
 auto VulkanStuff::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
-  constexpr vk::ApplicationInfo appInfo{
-      .pApplicationName = "Hello Triangle",
-      .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-      .pEngineName = "No Engine",
-      .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-      .apiVersion = vk::ApiVersion14};
+  constexpr vk::ApplicationInfo appInfo{.apiVersion = vk::ApiVersion14};
 
-  std::vector<char const*> requiredLayers;
+  std::vector<const char*> requiredLayers;
   if (enableValidationLayers) {
     const std::vector<char const*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
     requiredLayers.assign(validationLayers.begin(), validationLayers.end());
-  }
-  auto layerProperties = context.enumerateInstanceLayerProperties();
-  auto unsupportedLayerIt = std::ranges::find_if(
-      requiredLayers, [&layerProperties](auto const& requiredLayer) {
-        return std::ranges::none_of(
-            layerProperties, [requiredLayer](auto const& layerProperty) {
-              return strcmp(layerProperty.layerName, requiredLayer) == 0;
-            });
-      });
-  if (unsupportedLayerIt != requiredLayers.end()) {
-    throw std::runtime_error("Required layer not supported: " +
-                             std::string(*unsupportedLayerIt));
+    auto layerProperties = context.enumerateInstanceLayerProperties();
+    auto unsupportedLayerIt = std::ranges::find_if(
+        requiredLayers, [&layerProperties](auto const& requiredLayer) {
+          return std::ranges::none_of(
+              layerProperties, [requiredLayer](auto const& layerProperty) {
+                return strcmp(layerProperty.layerName, requiredLayer) == 0;
+              });
+        });
+    if (unsupportedLayerIt != requiredLayers.end()) {
+      throw std::runtime_error("Required layer not supported: " +
+                               std::string(*unsupportedLayerIt));
+    }
   }
 
   uint32_t sdlExtensionCount = 0;
@@ -222,7 +219,6 @@ auto VulkanStuff::createInstance(const vk::raii::Context& context)
   if (enableValidationLayers) {
     requiredExtensions.push_back(vk::EXTDebugUtilsExtensionName);
   }
-
   auto extensionProperties = context.enumerateInstanceExtensionProperties();
   auto unsupportedPropertyIt = std::ranges::find_if(
       requiredExtensions,
@@ -316,14 +312,19 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
   auto physicalDevices = instance.enumeratePhysicalDevices();
   auto const deviceIter =
       std::ranges::find_if(physicalDevices, [&](auto const& physicalDevice) {
-        bool supportsVulkan1_3 =
-            physicalDevice.getProperties().apiVersion >= vk::ApiVersion13;
+        if (physicalDevice.getProperties().apiVersion < vk::ApiVersion13) {
+          return false;
+        }
 
         auto queueFamilies = physicalDevice.getQueueFamilyProperties();
         bool supportsGraphics =
             std::ranges::any_of(queueFamilies, [](auto const& qfp) {
-              return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+              return static_cast<bool>(qfp.queueFlags &
+                                       vk::QueueFlagBits::eGraphics);
             });
+        if (!supportsGraphics) {
+          return false;
+        }
 
         auto availableDeviceExtensions =
             physicalDevice.enumerateDeviceExtensionProperties();
@@ -338,11 +339,14 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
                                   requiredDeviceExtension) == 0;
                   });
             });
+        if (!supportsAllRequiredExtensions) {
+          return false;
+        }
 
         auto features = physicalDevice.template getFeatures2<
             vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
             vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-        bool supportsRequiredFeatures =
+        bool supportsFeatures =
             features.template get<vk::PhysicalDeviceVulkan13Features>()
                 .dynamicRendering &&
             features
@@ -350,9 +354,9 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
                     vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>()
                 .extendedDynamicState;
 
-        return supportsVulkan1_3 && supportsGraphics &&
-               supportsAllRequiredExtensions && supportsRequiredFeatures;
+        return supportsFeatures;
       });
+
   if (deviceIter == physicalDevices.end()) {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
@@ -390,13 +394,6 @@ auto VulkanStuff::createLogicalDevice(
   return {physicalDevice, deviceCreateInfo};
 }
 
-auto VulkanStuff::createGraphicsQueue(
-    const vk::raii::SurfaceKHR& surface,
-    const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& device) -> vk::raii::Queue {
-  return {device, findGraphicsQueueIndex(surface, physicalDevice), 0};
-}
-
 auto VulkanStuff::findGraphicsQueueIndex(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t {
@@ -422,11 +419,9 @@ auto VulkanStuff::createSwapchainBundle(
   vk::SurfaceCapabilitiesKHR capabilities =
       physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
-  auto minImageCount = std::max(3U, capabilities.minImageCount);
-  if (capabilities.maxImageCount > 0 &&
-      (capabilities.maxImageCount < minImageCount)) {
-    minImageCount = capabilities.maxImageCount;
-  }
+  uint32_t imageCount = std::clamp(
+      3U, capabilities.minImageCount,
+      capabilities.maxImageCount > 0 ? capabilities.maxImageCount : UINT32_MAX);
 
   std::vector<vk::SurfaceFormatKHR> availableFormats =
       physicalDevice.getSurfaceFormatsKHR(*surface);
@@ -466,7 +461,7 @@ auto VulkanStuff::createSwapchainBundle(
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo{
       .surface = *surface,
-      .minImageCount = minImageCount,
+      .minImageCount = imageCount,
       .imageFormat = swapchainSurfaceFormat.format,
       .imageColorSpace = swapchainSurfaceFormat.colorSpace,
       .imageExtent = swapchainExtent,
@@ -504,21 +499,14 @@ auto VulkanStuff::createSwapchainBundle(
           .imageViews = std::move(imageViews)};
 }
 
-auto VulkanStuff::createPipelineLayout(const vk::raii::Device& device)
-    -> vk::raii::PipelineLayout {
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{.setLayoutCount = 0,
-                                                  .pushConstantRangeCount = 0};
-  return {device, pipelineLayoutInfo};
-}
-
 auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
                                          const SwapchainBundle& swapchainBundle,
                                          const vk::raii::PipelineLayout& layout)
     -> vk::raii::Pipeline {
-  auto shaderCode = readFile(SHADER_PATH);
+  auto shaderSpirV = readFile(SHADER_PATH);
   vk::ShaderModuleCreateInfo createInfo{
-      .codeSize = shaderCode.size() * sizeof(char),
-      .pCode = reinterpret_cast<const uint32_t*>(shaderCode.data())};
+      .codeSize = shaderSpirV.size() * sizeof(char),
+      .pCode = reinterpret_cast<const uint32_t*>(shaderSpirV.data())};
   vk::raii::ShaderModule shaderModule{device, createInfo};
 
   vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
@@ -611,16 +599,18 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
           pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()};
 }
 
-auto VulkanStuff::readFile(const std::string& filename) -> std::vector<char> {
+auto VulkanStuff::readFile(const std::string& filename)
+    -> std::vector<uint32_t> {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
-    throw std::runtime_error("failed to open file!");
+    throw std::runtime_error("failed to open file: " + filename);
   }
 
-  std::vector<char> buffer(file.tellg());
-  file.seekg(0, std::ios::beg);
-  file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-  file.close();
+  size_t fileSize = file.tellg();
+  std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
+  file.seekg(0);
+  file.read(reinterpret_cast<char*>(buffer.data()),
+            static_cast<std::streamsize>(fileSize));
   return buffer;
 }
 

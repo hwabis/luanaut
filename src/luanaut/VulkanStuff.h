@@ -1,5 +1,5 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS  // ← add this
+#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -57,10 +57,6 @@ class VulkanStuff {
   static auto createLogicalDevice(
       const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::Device;
-  static auto createGraphicsQueue(
-      const vk::raii::SurfaceKHR& surface,
-      const vk::raii::PhysicalDevice& physicalDevice,
-      const vk::raii::Device& device) -> vk::raii::Queue;
   static auto findGraphicsQueueIndex(
       const vk::raii::SurfaceKHR& surface,
       const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t;
@@ -70,13 +66,11 @@ class VulkanStuff {
       const vk::raii::PhysicalDevice& physicalDevice,
       const vk::raii::Device& device,
       vk::SwapchainKHR oldSwapchain = VK_NULL_HANDLE) -> SwapchainBundle;
-  static auto createPipelineLayout(const vk::raii::Device& device)
-      -> vk::raii::PipelineLayout;
   static auto createGraphicsPipeline(const vk::raii::Device& device,
                                      const SwapchainBundle& swapchainBundle,
                                      const vk::raii::PipelineLayout& layout)
       -> vk::raii::Pipeline;
-  static auto readFile(const std::string& filename) -> std::vector<char>;
+  static auto readFile(const std::string& filename) -> std::vector<uint32_t>;
   static auto createCommandPool(const vk::raii::SurfaceKHR& surface,
                                 const vk::raii::Device& device,
                                 const vk::raii::PhysicalDevice& physicalDevice)
