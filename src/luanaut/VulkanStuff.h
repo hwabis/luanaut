@@ -16,16 +16,19 @@ class VulkanStuff {
  private:
   struct SwapchainBundle {
     vk::raii::SwapchainKHR swapchain;
-    std::vector<vk::Image> images;
+    struct ImageInfo {
+      vk::Image image;
+      vk::raii::ImageView imageView;
+      vk::raii::Semaphore renderFinishedSemaphore;
+    };
+    std::vector<ImageInfo> imagesInfo;
     vk::SurfaceFormatKHR format;
     vk::Extent2D extent;
-    std::vector<vk::raii::ImageView> imageViews;
   };
 
-  struct SyncBundle {
-    std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
-    std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
-    std::vector<vk::raii::Fence> commandBufferFences;
+  struct CommandBufferInfo {
+    vk::raii::Fence fence;
+    vk::raii::Semaphore presentCompleteSemaphore;
   };
 
   auto recordCommandBuffer(uint32_t frameIndex, uint32_t imageIndex) -> void;
@@ -78,9 +81,8 @@ class VulkanStuff {
   static auto createCommandBuffers(const vk::raii::Device& device,
                                    const vk::raii::CommandPool& commandPool)
       -> vk::raii::CommandBuffers;
-  static auto createSyncBundle(const vk::raii::Device& device,
-                               const SwapchainBundle& swapchainBundle)
-      -> SyncBundle;
+  static auto createCommandBuffersInfo(const vk::raii::Device& device)
+      -> std::vector<CommandBufferInfo>;
 
   SDL_Window* window_;
 
@@ -100,8 +102,7 @@ class VulkanStuff {
 
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
-
-  SyncBundle syncBundle_;
+  std::vector<CommandBufferInfo> commandBuffersInfo_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;

@@ -35,7 +35,7 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
-      syncBundle_(createSyncBundle(device_, swapchainBundle_)) {}
+      commandBuffersInfo_(createCommandBuffersInfo(device_)) {}
 
 VulkanStuff::~VulkanStuff() {
   device_.waitIdle();
@@ -43,13 +43,15 @@ VulkanStuff::~VulkanStuff() {
 
 auto VulkanStuff::DrawFrame() -> void {
   auto fenceResult = device_.waitForFences(
-      *syncBundle_.commandBufferFences[commandBufferIndex_], vk::True, UINT64_MAX);
+      *commandBuffersInfo_[commandBufferIndex_].fence, vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to wait for fence!");
   }
 
   auto [result, imageIndex] = swapchainBundle_.swapchain.acquireNextImage(
-      UINT64_MAX, *syncBundle_.presentCompleteSemaphores[commandBufferIndex_], nullptr);
+      UINT64_MAX,
+      *commandBuffersInfo_[commandBufferIndex_].presentCompleteSemaphore,
+      nullptr);
   if (result == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapchain();
     return;
@@ -58,7 +60,7 @@ auto VulkanStuff::DrawFrame() -> void {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  device_.resetFences(*syncBundle_.commandBufferFences[commandBufferIndex_]);
+  device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
   recordCommandBuffer(commandBufferIndex_, imageIndex);
@@ -67,17 +69,21 @@ auto VulkanStuff::DrawFrame() -> void {
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*syncBundle_.presentCompleteSemaphores[commandBufferIndex_],
+      .pWaitSemaphores =
+          &*commandBuffersInfo_[commandBufferIndex_].presentCompleteSemaphore,
       .pWaitDstStageMask = &waitDestinationStageMask,
       .commandBufferCount = 1,
       .pCommandBuffers = &*commandBuffers_[commandBufferIndex_],
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex]};
-  graphicsQueue_.submit(submitInfo, *syncBundle_.commandBufferFences[commandBufferIndex_]);
+      .pSignalSemaphores =
+          &*swapchainBundle_.imagesInfo[imageIndex].renderFinishedSemaphore};
+  graphicsQueue_.submit(submitInfo,
+                        *commandBuffersInfo_[commandBufferIndex_].fence);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &*syncBundle_.renderFinishedSemaphores[imageIndex],
+      .pWaitSemaphores =
+          &*swapchainBundle_.imagesInfo[imageIndex].renderFinishedSemaphore,
       .swapchainCount = 1,
       .pSwapchains = &*swapchainBundle_.swapchain,
       .pImageIndices = &imageIndex};
@@ -107,7 +113,7 @@ auto VulkanStuff::recordCommandBuffer(uint32_t frameIndex_, uint32_t imageIndex)
 
   vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
   vk::RenderingAttachmentInfo attachmentInfo{
-      .imageView = *swapchainBundle_.imageViews[imageIndex],
+      .imageView = *swapchainBundle_.imagesInfo[imageIndex].imageView,
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
       .loadOp = vk::AttachmentLoadOp::eClear,
       .storeOp = vk::AttachmentStoreOp::eStore,
@@ -159,7 +165,7 @@ auto VulkanStuff::transitionImageLayout(uint32_t frameIndex_,
       .newLayout = newLayout,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image = swapchainBundle_.images[imageIndex],
+      .image = swapchainBundle_.imagesInfo[imageIndex].image,
       .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
                            .baseMipLevel = 0,
                            .levelCount = 1,
@@ -485,18 +491,22 @@ auto VulkanStuff::createSwapchainBundle(
                            .levelCount = 1,
                            .baseArrayLayer = 0,
                            .layerCount = 1}};
-
-  std::vector<vk::raii::ImageView> imageViews;
+  std::vector<SwapchainBundle::ImageInfo> imagesInfo;
   for (auto& image : images) {
     imageViewCreateInfo.image = image;
-    imageViews.emplace_back(device, imageViewCreateInfo);
+    imagesInfo.push_back(SwapchainBundle::ImageInfo{
+        .image = image,
+        .imageView = {device, imageViewCreateInfo},
+        .renderFinishedSemaphore = {device, vk::SemaphoreCreateInfo()},
+    });
   }
 
-  return {.swapchain = std::move(swapchain),
-          .images = std::move(images),
-          .format = swapchainSurfaceFormat,
-          .extent = swapchainExtent,
-          .imageViews = std::move(imageViews)};
+  return {
+      .swapchain = std::move(swapchain),
+      .imagesInfo = std::move(imagesInfo),
+      .format = swapchainSurfaceFormat,
+      .extent = swapchainExtent,
+  };
 }
 
 auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
@@ -633,29 +643,24 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
       .commandPool = commandPool,
       .level = vk::CommandBufferLevel::ePrimary,
       .commandBufferCount = commandBufferCount};
-
   return {device, allocInfo};
 }
 
-auto VulkanStuff::createSyncBundle(const vk::raii::Device& device,
-                                   const SwapchainBundle& swapchainBundle)
-    -> SyncBundle {
-  SyncBundle syncBundle;
-
-  for (size_t i = 0; i < swapchainBundle.images.size(); i++) {
-    syncBundle.renderFinishedSemaphores.emplace_back(device,
-                                                     vk::SemaphoreCreateInfo());
-  }
+auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device)
+    -> std::vector<CommandBufferInfo> {
+  std::vector<CommandBufferInfo> info;
+  info.reserve(commandBufferCount);
 
   for (size_t i = 0; i < commandBufferCount; i++) {
-    syncBundle.presentCompleteSemaphores.emplace_back(
-        device, vk::SemaphoreCreateInfo());
-    syncBundle.commandBufferFences.emplace_back(
-        device,
-        vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+    info.push_back(CommandBufferInfo{
+        .fence = {device,
+                  vk::FenceCreateInfo{.flags =
+                                          vk::FenceCreateFlagBits::eSignaled}},
+        .presentCompleteSemaphore = {device, vk::SemaphoreCreateInfo()},
+    });
   }
 
-  return syncBundle;
+  return info;
 }
 
 }  // namespace luanaut
