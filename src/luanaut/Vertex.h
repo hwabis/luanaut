@@ -1,3 +1,4 @@
+#pragma once
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -26,10 +27,5 @@ struct Vertex {
               .offset = offsetof(Vertex, color)}}};
   }
 };
-
-const std::vector<Vertex> vertices = {
-    {.pos = {0.0F, -0.5F}, .color = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F}, .color = {0.0F, 1.0F, 0.0F}},
-    {.pos = {-0.5F, 0.5F}, .color = {0.0F, 0.0F, 1.0F}}};
 
 }  // namespace luanaut

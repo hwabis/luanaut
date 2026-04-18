@@ -19,6 +19,11 @@ const std::vector<const char*> requiredDeviceExtensions = {
 
 constexpr int commandBufferCount = 2;
 
+const std::vector<Vertex> vertices = {
+    {.pos = {0.0F, -0.5F}, .color = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F}, .color = {0.0F, 1.0F, 0.0F}},
+    {.pos = {-0.5F, 0.5F}, .color = {0.0F, 0.0F, 1.0F}}};  // todo
+
 VulkanStuff::VulkanStuff(SDL_Window* window)
     : window_(window),
       instance_(createInstance(context_)),
