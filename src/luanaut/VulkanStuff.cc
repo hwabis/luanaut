@@ -30,7 +30,7 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
                      0),
       swapchainBundle_(
           createSwapchainBundle(window_, surface_, physicalDevice_, device_)),
-      pipelineLayout_(device_, {}),
+      pipelineLayout_(device_, vk::PipelineLayoutCreateInfo{}),
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
@@ -505,8 +505,8 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
     -> vk::raii::Pipeline {
   auto shaderSpirV = readFile(SHADER_PATH);
   vk::ShaderModuleCreateInfo createInfo{
-      .codeSize = shaderSpirV.size() * sizeof(char),
-      .pCode = reinterpret_cast<const uint32_t*>(shaderSpirV.data())};
+      .codeSize = shaderSpirV.size() * sizeof(uint32_t),
+      .pCode = shaderSpirV.data()};
   vk::raii::ShaderModule shaderModule{device, createInfo};
 
   vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
