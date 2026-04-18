@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
+#include "Vertex.h"
 
 namespace luanaut {
 
@@ -538,7 +539,14 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
   std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
       vertShaderStageInfo, fragShaderStageInfo};
 
-  vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+  auto bindingDescription = Vertex::GetBindingDescription();
+  auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+  vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
+      .vertexBindingDescriptionCount = 1,
+      .pVertexBindingDescriptions = &bindingDescription,
+      .vertexAttributeDescriptionCount =
+          static_cast<uint32_t>(attributeDescriptions.size()),
+      .pVertexAttributeDescriptions = attributeDescriptions.data()};
 
   vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
       .topology = vk::PrimitiveTopology::eTriangleList};

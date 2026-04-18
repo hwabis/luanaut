@@ -4,10 +4,12 @@ find_package(SDL3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanHeaders CONFIG REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 add_executable(luanaut
   Main.cc
+  Vertex.h
   VulkanStuff.cc
 )
 
@@ -23,6 +25,7 @@ target_link_libraries(luanaut
     Vulkan::Vulkan
     Vulkan::Headers
     GPUOpen::VulkanMemoryAllocator
+    glm::glm
     spdlog::spdlog
 )
 
@@ -32,11 +35,11 @@ set(SHADER_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shaders/shader.spv)
 add_custom_command(
     OUTPUT ${SHADER_OUTPUT}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-    COMMAND ${SLANGC_EXECUTABLE} ${SHADER_SOURCE} 
-            -target spirv -profile spirv_1_4 
-            -emit-spirv-directly 
-            -fvk-use-entrypoint-name 
-            -entry vertMain -entry fragMain 
+    COMMAND ${SLANGC_EXECUTABLE} ${SHADER_SOURCE}
+            -target spirv -profile spirv_1_4
+            -emit-spirv-directly
+            -fvk-use-entrypoint-name
+            -entry vertMain -entry fragMain
             -o ${SHADER_OUTPUT}
     DEPENDS ${SHADER_SOURCE}
     COMMENT "Compiling Slang shader: ${SHADER_SOURCE}"
