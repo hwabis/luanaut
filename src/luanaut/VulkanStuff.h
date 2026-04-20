@@ -37,7 +37,8 @@ class VulkanStuff {
                                   const SwapchainBundle::ImageInfo& imageInfo,
                                   const vk::Extent2D& extent,
                                   const vk::raii::Pipeline& pipeline,
-                                  VkBuffer vertexBuffer) -> void;
+                                  VkBuffer vertexBuffer,
+                                  VkBuffer indexBuffer) -> void;
   static auto transitionToColorAttachment(const vk::raii::CommandBuffer& cmd,
                                           vk::Image image) -> void;
   static auto transitionToPresent(const vk::raii::CommandBuffer& cmd,
@@ -108,6 +109,8 @@ class VulkanStuff {
   VmaAllocator allocator_;
   VkBuffer vertexBuffer_;
   VmaAllocation vertexAllocation_;
+  VkBuffer indexBuffer_;
+  VmaAllocation indexAllocation_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;
