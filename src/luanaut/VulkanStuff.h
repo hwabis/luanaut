@@ -32,13 +32,9 @@ class VulkanStuff {
   };
 
   auto recreateSwapchain() -> void;
+  auto recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
+                           uint32_t imageIndex) -> void;
 
-  static auto recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
-                                  const SwapchainBundle::ImageInfo& imageInfo,
-                                  const vk::Extent2D& extent,
-                                  const vk::raii::Pipeline& pipeline,
-                                  VkBuffer vertexBuffer,
-                                  VkBuffer indexBuffer) -> void;
   static auto transitionToColorAttachment(const vk::raii::CommandBuffer& cmd,
                                           vk::Image image) -> void;
   static auto transitionToPresent(const vk::raii::CommandBuffer& cmd,

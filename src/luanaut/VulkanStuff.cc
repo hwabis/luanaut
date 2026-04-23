@@ -187,10 +187,7 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  recordCommandBuffer(commandBuffers_[commandBufferIndex_],
-                      swapchainBundle_.imagesInfo[imageIndex],
-                      swapchainBundle_.extent, graphicsPipeline_, vertexBuffer_,
-                      indexBuffer_);
+  recordCommandBuffer(commandBuffers_[commandBufferIndex_], imageIndex);
 
   vk::PipelineStageFlags waitDestinationStageMask(
       vk::PipelineStageFlagBits::eColorAttachmentOutput);
@@ -241,41 +238,40 @@ auto VulkanStuff::recreateSwapchain() -> void {
                                            device_, swapchainBundle_.swapchain);
 }
 
-auto VulkanStuff::recordCommandBuffer(
-    const vk::raii::CommandBuffer& cmd,
-    const SwapchainBundle::ImageInfo& imageInfo,
-    const vk::Extent2D& extent,
-    const vk::raii::Pipeline& pipeline,
-    VkBuffer vertexBuffer,
-    VkBuffer indexBuffer) -> void {
+auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
+                                      uint32_t imageIndex) -> void {
   cmd.begin({});
 
-  transitionToColorAttachment(cmd, imageInfo.image);
+  transitionToColorAttachment(cmd,
+                              swapchainBundle_.imagesInfo[imageIndex].image);
 
   vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
   vk::RenderingAttachmentInfo attachmentInfo{
-      .imageView = *imageInfo.imageView,
+      .imageView = *swapchainBundle_.imagesInfo[imageIndex].imageView,
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
       .loadOp = vk::AttachmentLoadOp::eClear,
       .storeOp = vk::AttachmentStoreOp::eStore,
       .clearValue = clearColor};
   vk::RenderingInfo renderingInfo{
-      .renderArea = {.offset = {.x = 0, .y = 0}, .extent = extent},
+      .renderArea = {.offset = {.x = 0, .y = 0},
+                     .extent = swapchainBundle_.extent},
       .layerCount = 1,
       .colorAttachmentCount = 1,
       .pColorAttachments = &attachmentInfo};
 
   cmd.beginRendering(renderingInfo);
-  cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
-  cmd.setViewport(0, vk::Viewport(0.0F, 0.0F, static_cast<float>(extent.width),
-                                  static_cast<float>(extent.height), 0.F, 1.F));
-  cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, extent));
-  cmd.bindVertexBuffers(0, vk::Buffer(vertexBuffer), {0});
-  cmd.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+  cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline_);
+  cmd.setViewport(
+      0, vk::Viewport(
+             0.0F, 0.0F, static_cast<float>(swapchainBundle_.extent.width),
+             static_cast<float>(swapchainBundle_.extent.height), 0.F, 1.F));
+  cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
+  cmd.bindVertexBuffers(0, vk::Buffer(vertexBuffer_), {0});
+  cmd.bindIndexBuffer(indexBuffer_, 0, vk::IndexType::eUint16);
   cmd.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
   cmd.endRendering();
 
-  transitionToPresent(cmd, imageInfo.image);
+  transitionToPresent(cmd, swapchainBundle_.imagesInfo[imageIndex].image);
 
   cmd.end();
 }
