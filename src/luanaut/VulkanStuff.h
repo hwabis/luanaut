@@ -2,6 +2,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan_raii.hpp>
+#include "VmaAllocatorHandle.h"
 
 namespace luanaut {
 
@@ -29,6 +30,10 @@ class VulkanStuff {
   struct CommandBufferInfo {
     vk::raii::Fence fence;
     vk::raii::Semaphore presentCompleteSemaphore;
+    VkBuffer uniformBuffer;
+    VmaAllocation uniformAllocation;
+    void* uniformBufferMapped;
+    vk::raii::DescriptorSet descriptorSet;
   };
 
   auto recreateSwapchain() -> void;
@@ -79,8 +84,17 @@ class VulkanStuff {
   static auto createCommandBuffers(const vk::raii::Device& device,
                                    const vk::raii::CommandPool& commandPool)
       -> vk::raii::CommandBuffers;
-  static auto createCommandBuffersInfo(const vk::raii::Device& device)
+  static auto createCommandBuffersInfo(const vk::raii::Device& device,
+                                       VmaAllocator allocator)
       -> std::vector<CommandBufferInfo>;
+  static auto createDescriptorPool(const vk::raii::Device& device)
+      -> vk::raii::DescriptorPool;
+  static auto createDescriptorSetLayout(const vk::raii::Device& device)
+      -> vk::raii::DescriptorSetLayout;
+  static auto createDescriptorSets(const vk::raii::Device& device,
+                                   const vk::raii::DescriptorPool& pool,
+                                   const vk::raii::DescriptorSetLayout& layout)
+      -> vk::raii::DescriptorSets;
 
   SDL_Window* window_;
 
@@ -100,13 +114,17 @@ class VulkanStuff {
 
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
+  VmaAllocatorHandle allocator_;
   std::vector<CommandBufferInfo> commandBuffersInfo_;
 
-  VmaAllocator allocator_;
   VkBuffer vertexBuffer_;
   VmaAllocation vertexAllocation_;
   VkBuffer indexBuffer_;
   VmaAllocation indexAllocation_;
+
+  vk::raii::DescriptorPool descriptorPool_;
+  vk::raii::DescriptorSetLayout descriptorLayout_;
+  vk::raii::DescriptorSets descriptorSets_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;

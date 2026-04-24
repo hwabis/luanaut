@@ -1,14 +1,13 @@
+#include <vulkan/vulkan_core.h>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
-#define VMA_IMPLEMENTATION
-#include "VulkanStuff.h"
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
-#include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
-#include <vulkan/vulkan.hpp>
 #include "Vertex.h"
+#include "VulkanStuff.h"
+#include "shaders/UniformBufferObject.h"
 
 namespace luanaut {
 
@@ -52,22 +51,12 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
-      commandBuffersInfo_(createCommandBuffersInfo(device_)) {
-  VmaAllocatorCreateInfo allocatorInfo{
-      .flags = 0,
-      .physicalDevice = *physicalDevice_,
-      .device = *device_,
-      .preferredLargeHeapBlockSize = 0,
-      .pAllocationCallbacks = nullptr,
-      .pDeviceMemoryCallbacks = nullptr,
-      .pHeapSizeLimit = nullptr,
-      .pVulkanFunctions = nullptr,
-      .instance = *instance_,
-      .vulkanApiVersion = vk::ApiVersion13,
-      .pTypeExternalMemoryHandleTypes = nullptr,
-  };
-  vmaCreateAllocator(&allocatorInfo, &allocator_);
-
+      allocator_(*physicalDevice_, *device_, *instance_),
+      commandBuffersInfo_(createCommandBuffersInfo(device_, allocator_)),
+      descriptorPool_(createDescriptorPool(device_)),
+      descriptorLayout_(createDescriptorSetLayout(device_)),
+      descriptorSets_(
+          createDescriptorSets(device_, descriptorPool_, descriptorLayout_)) {
   // Upload vertices
 
   VkBuffer stagingBuffer;
@@ -268,6 +257,9 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
   cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
   cmd.bindVertexBuffers(0, vk::Buffer(vertexBuffer_), {0});
   cmd.bindIndexBuffer(indexBuffer_, 0, vk::IndexType::eUint16);
+  //  cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipelineLayout_,
+  //  0,
+  //                       *descriptorSet_, {});
   cmd.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
   cmd.endRendering();
 
@@ -786,21 +778,85 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
   return {device, allocInfo};
 }
 
-auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device)
+auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device,
+                                           VmaAllocator allocator)
     -> std::vector<CommandBufferInfo> {
-  std::vector<CommandBufferInfo> info;
-  info.reserve(commandBufferCount);
+  std::vector<CommandBufferInfo> infos;
+  infos.reserve(commandBufferCount);
+
+  VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                .pNext = nullptr,
+                                .flags = 0,
+                                .size = sizeof(UniformBufferObject),
+                                .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                .queueFamilyIndexCount = 0,
+                                .pQueueFamilyIndices = nullptr};
+  VmaAllocationCreateInfo allocInfo{.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                                    .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
+                                    .requiredFlags = 0,
+                                    .preferredFlags = 0,
+                                    .memoryTypeBits = 0,
+                                    .pool = nullptr,
+                                    .pUserData = nullptr,
+                                    .priority = 0.0F};
 
   for (size_t i = 0; i < commandBufferCount; i++) {
-    info.push_back(CommandBufferInfo{
+    CommandBufferInfo info{
         .fence = {device,
                   vk::FenceCreateInfo{.flags =
                                           vk::FenceCreateFlagBits::eSignaled}},
         .presentCompleteSemaphore = {device, vk::SemaphoreCreateInfo()},
-    });
+        .uniformBuffer = nullptr,
+        .uniformAllocation = nullptr,
+        .uniformBufferMapped = nullptr,
+        .descriptorSet = nullptr,
+    };
+
+    VmaAllocationInfo allocationInfo;
+    vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &info.uniformBuffer,
+                    &info.uniformAllocation, &allocationInfo);
+    info.uniformBufferMapped = allocationInfo.pMappedData;
+
+    infos.push_back(std::move(info));
   }
 
-  return info;
+  return infos;
+}
+
+auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
+    -> vk::raii::DescriptorPool {
+  vk::DescriptorPoolSize poolSize{.type = vk::DescriptorType::eUniformBuffer,
+                                  .descriptorCount = 1};
+  vk::DescriptorPoolCreateInfo poolInfo{.maxSets = commandBufferCount,
+                                        .poolSizeCount = 1,
+                                        .pPoolSizes = &poolSize};
+
+  return {device, poolInfo};
+}
+
+auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
+    -> vk::raii::DescriptorSetLayout {
+  vk::DescriptorSetLayoutBinding layoutBinding{
+      .binding = 0,
+      .descriptorType = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount = commandBufferCount,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 1,
+                                               .pBindings = &layoutBinding};
+
+  return {device, layoutInfo};
+}
+
+auto VulkanStuff::createDescriptorSets(
+    const vk::raii::Device& device,
+    const vk::raii::DescriptorPool& pool,
+    const vk::raii::DescriptorSetLayout& layout) -> vk::raii::DescriptorSets {
+  vk::DescriptorSetAllocateInfo info{.descriptorPool = *pool,
+                                     .descriptorSetCount = commandBufferCount,
+                                     .pSetLayouts = &*layout};
+
+  return {device, info};
 }
 
 }  // namespace luanaut

@@ -9,7 +9,7 @@ find_package(spdlog CONFIG REQUIRED)
 
 add_executable(luanaut
   Main.cc
-  Vertex.h
+  VmaImpl.cc
   VulkanStuff.cc
 )
 
