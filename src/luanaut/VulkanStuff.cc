@@ -46,17 +46,18 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
                      0),
       swapchainBundle_(
           createSwapchainBundle(window_, surface_, physicalDevice_, device_)),
-      pipelineLayout_(device_, vk::PipelineLayoutCreateInfo{}),
+      descriptorPool_(createDescriptorPool(device_)),
+      descriptorSetLayout_(createDescriptorSetLayout(device_)),
+      pipelineLayout_(createPipelineLayout(device_, descriptorSetLayout_)),
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
+      allocator_(*physicalDevice_, *device_, *instance_),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
-      allocator_(*physicalDevice_, *device_, *instance_),
-      commandBuffersInfo_(createCommandBuffersInfo(device_, allocator_)),
-      descriptorPool_(createDescriptorPool(device_)),
-      descriptorLayout_(createDescriptorSetLayout(device_)),
-      descriptorSets_(
-          createDescriptorSets(device_, descriptorPool_, descriptorLayout_)) {
+      commandBuffersInfo_(createCommandBuffersInfo(device_,
+                                                   allocator_,
+                                                   descriptorPool_,
+                                                   descriptorSetLayout_)) {
   // Upload vertices
 
   VkBuffer stagingBuffer;
@@ -149,9 +150,11 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
 
 VulkanStuff::~VulkanStuff() {
   device_.waitIdle();
+  for (auto& info : commandBuffersInfo_) {
+    vmaDestroyBuffer(allocator_, info.uniformBuffer, info.uniformAllocation);
+  }
   vmaDestroyBuffer(allocator_, vertexBuffer_, vertexAllocation_);
   vmaDestroyBuffer(allocator_, indexBuffer_, indexAllocation_);
-  vmaDestroyAllocator(allocator_);
 }
 
 auto VulkanStuff::DrawFrame() -> void {
@@ -176,6 +179,11 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
+  UniformBufferObject ubo{.model = glm::mat4(1.0F),
+                          .view = glm::mat4(1.0F),
+                          .proj = glm::mat4(1.0F)};
+  memcpy(commandBuffersInfo_[commandBufferIndex_].uniformBufferMapped, &ubo,
+         sizeof(ubo));
   recordCommandBuffer(commandBuffers_[commandBufferIndex_], imageIndex);
 
   vk::PipelineStageFlags waitDestinationStageMask(
@@ -257,9 +265,9 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
   cmd.setScissor(0, vk::Rect2D({.x = 0, .y = 0}, swapchainBundle_.extent));
   cmd.bindVertexBuffers(0, vk::Buffer(vertexBuffer_), {0});
   cmd.bindIndexBuffer(indexBuffer_, 0, vk::IndexType::eUint16);
-  //  cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipelineLayout_,
-  //  0,
-  //                       *descriptorSet_, {});
+  cmd.bindDescriptorSets(
+      vk::PipelineBindPoint::eGraphics, *pipelineLayout_, 0,
+      *commandBuffersInfo_[commandBufferIndex_].descriptorSet, {});
   cmd.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
   cmd.endRendering();
 
@@ -634,6 +642,43 @@ auto VulkanStuff::createSwapchainBundle(
   };
 }
 
+auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
+    -> vk::raii::DescriptorPool {
+  vk::DescriptorPoolSize poolSize{.type = vk::DescriptorType::eUniformBuffer,
+                                  .descriptorCount = commandBufferCount};
+  vk::DescriptorPoolCreateInfo poolInfo{
+      .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+      .maxSets = commandBufferCount,
+      .poolSizeCount = 1,
+      .pPoolSizes = &poolSize};
+
+  return {device, poolInfo};
+}
+
+auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
+    -> vk::raii::DescriptorSetLayout {
+  vk::DescriptorSetLayoutBinding layoutBinding{
+      .binding = 0,
+      .descriptorType = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 1,
+                                               .pBindings = &layoutBinding};
+
+  return {device, layoutInfo};
+}
+
+auto VulkanStuff::createPipelineLayout(
+    const vk::raii::Device& device,
+    const vk::raii::DescriptorSetLayout& descriptorSetLayout)
+    -> vk::raii::PipelineLayout {
+  return {
+      device,
+      vk::PipelineLayoutCreateInfo{.setLayoutCount = 1,
+                                   .pSetLayouts = &*descriptorSetLayout},
+  };
+}
+
 auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
                                          const SwapchainBundle& swapchainBundle,
                                          const vk::raii::PipelineLayout& layout)
@@ -778,8 +823,11 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
   return {device, allocInfo};
 }
 
-auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device,
-                                           VmaAllocator allocator)
+auto VulkanStuff::createCommandBuffersInfo(
+    const vk::raii::Device& device,
+    VmaAllocator allocator,
+    const vk::raii::DescriptorPool& pool,
+    const vk::raii::DescriptorSetLayout& layout)
     -> std::vector<CommandBufferInfo> {
   std::vector<CommandBufferInfo> infos;
   infos.reserve(commandBufferCount);
@@ -800,6 +848,12 @@ auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device,
                                     .pool = nullptr,
                                     .pUserData = nullptr,
                                     .priority = 0.0F};
+  std::vector<vk::DescriptorSetLayout> layouts(commandBufferCount, *layout);
+  vk::DescriptorSetAllocateInfo setInfo{
+      .descriptorPool = *pool,
+      .descriptorSetCount = commandBufferCount,
+      .pSetLayouts = layouts.data()};
+  auto allSets = vk::raii::DescriptorSets(device, setInfo);
 
   for (size_t i = 0; i < commandBufferCount; i++) {
     CommandBufferInfo info{
@@ -810,53 +864,30 @@ auto VulkanStuff::createCommandBuffersInfo(const vk::raii::Device& device,
         .uniformBuffer = nullptr,
         .uniformAllocation = nullptr,
         .uniformBufferMapped = nullptr,
-        .descriptorSet = nullptr,
-    };
+        .descriptorSet = std::move(allSets[i])};
 
     VmaAllocationInfo allocationInfo;
     vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &info.uniformBuffer,
                     &info.uniformAllocation, &allocationInfo);
     info.uniformBufferMapped = allocationInfo.pMappedData;
 
+    vk::DescriptorBufferInfo bufferDescInfo{
+        .buffer = info.uniformBuffer,
+        .offset = 0,
+        .range = sizeof(UniformBufferObject)};
+    vk::WriteDescriptorSet descriptorWrite{
+        .dstSet = *info.descriptorSet,
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .pBufferInfo = &bufferDescInfo};
+    device.updateDescriptorSets(descriptorWrite, nullptr);
+
     infos.push_back(std::move(info));
   }
 
   return infos;
-}
-
-auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
-    -> vk::raii::DescriptorPool {
-  vk::DescriptorPoolSize poolSize{.type = vk::DescriptorType::eUniformBuffer,
-                                  .descriptorCount = 1};
-  vk::DescriptorPoolCreateInfo poolInfo{.maxSets = commandBufferCount,
-                                        .poolSizeCount = 1,
-                                        .pPoolSizes = &poolSize};
-
-  return {device, poolInfo};
-}
-
-auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
-    -> vk::raii::DescriptorSetLayout {
-  vk::DescriptorSetLayoutBinding layoutBinding{
-      .binding = 0,
-      .descriptorType = vk::DescriptorType::eUniformBuffer,
-      .descriptorCount = commandBufferCount,
-      .stageFlags = vk::ShaderStageFlagBits::eVertex};
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 1,
-                                               .pBindings = &layoutBinding};
-
-  return {device, layoutInfo};
-}
-
-auto VulkanStuff::createDescriptorSets(
-    const vk::raii::Device& device,
-    const vk::raii::DescriptorPool& pool,
-    const vk::raii::DescriptorSetLayout& layout) -> vk::raii::DescriptorSets {
-  vk::DescriptorSetAllocateInfo info{.descriptorPool = *pool,
-                                     .descriptorSetCount = commandBufferCount,
-                                     .pSetLayouts = &*layout};
-
-  return {device, info};
 }
 
 }  // namespace luanaut

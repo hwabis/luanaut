@@ -72,6 +72,14 @@ class VulkanStuff {
       const vk::raii::PhysicalDevice& physicalDevice,
       const vk::raii::Device& device,
       vk::SwapchainKHR oldSwapchain = VK_NULL_HANDLE) -> SwapchainBundle;
+  static auto createDescriptorPool(const vk::raii::Device& device)
+      -> vk::raii::DescriptorPool;
+  static auto createDescriptorSetLayout(const vk::raii::Device& device)
+      -> vk::raii::DescriptorSetLayout;
+  static auto createPipelineLayout(
+      const vk::raii::Device& device,
+      const vk::raii::DescriptorSetLayout& descriptorSetLayout)
+      -> vk::raii::PipelineLayout;
   static auto createGraphicsPipeline(const vk::raii::Device& device,
                                      const SwapchainBundle& swapchainBundle,
                                      const vk::raii::PipelineLayout& layout)
@@ -84,17 +92,12 @@ class VulkanStuff {
   static auto createCommandBuffers(const vk::raii::Device& device,
                                    const vk::raii::CommandPool& commandPool)
       -> vk::raii::CommandBuffers;
-  static auto createCommandBuffersInfo(const vk::raii::Device& device,
-                                       VmaAllocator allocator)
+  static auto createCommandBuffersInfo(
+      const vk::raii::Device& device,
+      VmaAllocator allocator,
+      const vk::raii::DescriptorPool& pool,
+      const vk::raii::DescriptorSetLayout& layout)
       -> std::vector<CommandBufferInfo>;
-  static auto createDescriptorPool(const vk::raii::Device& device)
-      -> vk::raii::DescriptorPool;
-  static auto createDescriptorSetLayout(const vk::raii::Device& device)
-      -> vk::raii::DescriptorSetLayout;
-  static auto createDescriptorSets(const vk::raii::Device& device,
-                                   const vk::raii::DescriptorPool& pool,
-                                   const vk::raii::DescriptorSetLayout& layout)
-      -> vk::raii::DescriptorSets;
 
   SDL_Window* window_;
 
@@ -109,22 +112,21 @@ class VulkanStuff {
 
   SwapchainBundle swapchainBundle_;
 
+  vk::raii::DescriptorPool descriptorPool_;
+  vk::raii::DescriptorSetLayout descriptorSetLayout_;
+
   vk::raii::PipelineLayout pipelineLayout_;
   vk::raii::Pipeline graphicsPipeline_;
 
-  vk::raii::CommandPool commandPool_;
-  vk::raii::CommandBuffers commandBuffers_;
   VmaAllocatorHandle allocator_;
-  std::vector<CommandBufferInfo> commandBuffersInfo_;
-
   VkBuffer vertexBuffer_;
   VmaAllocation vertexAllocation_;
   VkBuffer indexBuffer_;
   VmaAllocation indexAllocation_;
 
-  vk::raii::DescriptorPool descriptorPool_;
-  vk::raii::DescriptorSetLayout descriptorLayout_;
-  vk::raii::DescriptorSets descriptorSets_;
+  vk::raii::CommandPool commandPool_;
+  vk::raii::CommandBuffers commandBuffers_;
+  std::vector<CommandBufferInfo> commandBuffersInfo_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;
