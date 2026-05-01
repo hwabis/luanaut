@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL_vulkan.h>
 #include <vk_mem_alloc.h>
+#include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 #include "VmaAllocatorHandle.h"
 
@@ -130,6 +131,7 @@ class VulkanStuff {
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;
+  glm::mat4 uboModel_{1.0F};
 };
 
 }  // namespace luanaut

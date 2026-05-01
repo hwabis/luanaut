@@ -1,12 +1,12 @@
-#include <vulkan/vulkan_core.h>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
+#include "VulkanStuff.h"
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
 #include <array>
 #include <fstream>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Vertex.h"
-#include "VulkanStuff.h"
 #include "shaders/UniformBufferObject.h"
 
 namespace luanaut {
@@ -179,9 +179,9 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  UniformBufferObject ubo{.model = glm::mat4(1.0F),
-                          .view = glm::mat4(1.0F),
-                          .proj = glm::mat4(1.0F)};
+  uboModel_ = glm::rotate(uboModel_, glm::radians(0.1F), glm::vec3(0, 0, 1));
+  UniformBufferObject ubo{
+      .model = uboModel_, .view = glm::mat4(1.0F), .proj = glm::mat4(1.0F)};
   memcpy(commandBuffersInfo_[commandBufferIndex_].uniformBufferMapped, &ubo,
          sizeof(ubo));
   recordCommandBuffer(commandBuffers_[commandBufferIndex_], imageIndex);
