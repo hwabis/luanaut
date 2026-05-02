@@ -23,25 +23,41 @@ const std::vector<const char*> requiredDeviceExtensions = {
 constexpr int commandBufferCount = 2;
 
 const std::vector<Vertex> vertices = {
-    // Front face
-    {.pos = {-0.5F, -0.5F, 0.5F}, .color = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, -0.5F, 0.5F}, .color = {0.0F, 1.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .color = {0.0F, 0.0F, 1.0F}},
-    {.pos = {-0.5F, 0.5F, 0.5F}, .color = {1.0F, 1.0F, 0.0F}},
-    // Back face
-    {.pos = {-0.5F, -0.5F, -0.5F}, .color = {1.0F, 0.0F, 1.0F}},
-    {.pos = {0.5F, -0.5F, -0.5F}, .color = {0.0F, 1.0F, 1.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .color = {1.0F, 1.0F, 1.0F}},
-    {.pos = {-0.5F, 0.5F, -0.5F}, .color = {0.0F, 0.0F, 0.0F}},
+    // Front (0, 0, 1)
+    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
+    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
+    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
+    // Back (0, 0, -1)
+    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    // Left (-1, 0, 0)
+    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
+    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
+    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
+    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
+    // Right (1, 0, 0)
+    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    // Top (0, 1, 0)
+    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    // Bottom (0, -1, 0)
+    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
+    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
+    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
+    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
 };
 
 const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0,  // Front
-    1, 5, 6, 6, 2, 1,  // Right
-    5, 4, 7, 7, 6, 5,  // Back
-    4, 0, 3, 3, 7, 4,  // Left
-    3, 2, 6, 6, 7, 3,  // Top
-    4, 5, 1, 1, 0, 4   // Bottom
+    0,  3,  1,  1,  3,  2,  4,  5,  7,  5,  6,  7,  8,  11, 9,  9,  11, 10,
+    12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 23, 21, 21, 23, 22,
 };
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
@@ -189,16 +205,19 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  uboModel_ = glm::rotate(uboModel_, glm::radians(0.1F), glm::vec3(1, 1, 1));
+  uboModel_ = glm::rotate(uboModel_, glm::radians(0.5F), glm::vec3(1, 1, 1));
+  constexpr float fov = 60.0F;
+  auto proj =
+      glm::perspective(glm::radians(fov),
+                       static_cast<float>(swapchainBundle_.extent.width) /
+                           static_cast<float>(swapchainBundle_.extent.height),
+                       0.1F, 100.0F);
+  proj[1][1] *= -1;
   UniformBufferObject ubo{
       .model = uboModel_,
       .view = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0),
                           glm::vec3(0, 1, 0)),
-      .proj = glm::perspective(
-          glm::radians(60.0F),
-          static_cast<float>(swapchainBundle_.extent.width) /
-              static_cast<float>(swapchainBundle_.extent.height),
-          0.1F, 100.0F)};
+      .proj = proj};
   memcpy(commandBuffersInfo_[commandBufferIndex_].uniformBufferMapped, &ubo,
          sizeof(ubo));
   recordCommandBuffer(commandBuffers_[commandBufferIndex_], imageIndex);
@@ -748,7 +767,7 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
       .rasterizerDiscardEnable = vk::False,
       .polygonMode = vk::PolygonMode::eFill,
       .cullMode = vk::CullModeFlagBits::eBack,
-      .frontFace = vk::FrontFace::eClockwise,
+      .frontFace = vk::FrontFace::eCounterClockwise,
       .depthBiasEnable = vk::False,
       .lineWidth = 1.0F};
 

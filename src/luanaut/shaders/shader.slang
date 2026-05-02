@@ -1,11 +1,11 @@
 struct VSInput {
   float3 pos;
-  float3 color;
+  float3 normal;
 };
 
 struct VSOutput {
   float4 pos : SV_Position;
-  float3 color;
+  float3 normal;
 };
 
 struct UniformBufferObject {
@@ -20,12 +20,15 @@ ConstantBuffer<UniformBufferObject> ubo;
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
   VSOutput output;
-  output.pos = mul(ubo.proj, mul(ubo.view, mul(ubo.model, float4(input.pos, 1.0))));
-  output.color = input.color;
+  output.pos = mul(ubo.proj, mul(ubo.view, mul(ubo.model, float4(input.pos, 1))));
+  output.normal = mul((float3x3)ubo.model, input.normal);
   return output;
 }
 
 [shader("fragment")]
 float4 fragMain(VSOutput vertIn) : SV_TARGET {
-  return float4(vertIn.color, 1.0);
+  const float3 lightDir = normalize(float3(1, 0.5, 0.2));
+  const float4 objectColor = float4(1, 1, 1, 1);
+  float brightness = max(dot(vertIn.normal, lightDir), 0);
+  return float4(objectColor.rgb * brightness, 1);
 }

@@ -7,7 +7,7 @@ namespace luanaut {
 
 struct Vertex {
   glm::vec3 pos;
-  glm::vec3 color;
+  glm::vec3 normal;
 
   static auto GetBindingDescription() -> vk::VertexInputBindingDescription {
     return {.binding = 0,
@@ -24,7 +24,7 @@ struct Vertex {
              {.location = 1,
               .binding = 0,
               .format = vk::Format::eR32G32B32Sfloat,
-              .offset = offsetof(Vertex, color)}}};
+              .offset = offsetof(Vertex, normal)}}};
   }
 };
 
