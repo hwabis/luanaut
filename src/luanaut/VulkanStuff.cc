@@ -6,8 +6,8 @@
 #include <array>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Vertex.h"
 #include "shaders/UniformBufferObject.h"
+#include "shaders/Vertex.h"
 
 namespace luanaut {
 
@@ -23,15 +23,25 @@ const std::vector<const char*> requiredDeviceExtensions = {
 constexpr int commandBufferCount = 2;
 
 const std::vector<Vertex> vertices = {
-    {.pos = {-0.5F, -0.5F}, .color = {1.0F, 0.0F, 0.0F}},  // top left
-    {.pos = {0.5F, -0.5F}, .color = {0.0F, 1.0F, 0.0F}},   // top right
-    {.pos = {0.5F, 0.5F}, .color = {0.0F, 0.0F, 1.0F}},    // bottom right
-    {.pos = {-0.5F, 0.5F}, .color = {1.0F, 1.0F, 0.0F}},   // bottom left
+    // Front face
+    {.pos = {-0.5F, -0.5F, 0.5F}, .color = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, -0.5F, 0.5F}, .color = {0.0F, 1.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .color = {0.0F, 0.0F, 1.0F}},
+    {.pos = {-0.5F, 0.5F, 0.5F}, .color = {1.0F, 1.0F, 0.0F}},
+    // Back face
+    {.pos = {-0.5F, -0.5F, -0.5F}, .color = {1.0F, 0.0F, 1.0F}},
+    {.pos = {0.5F, -0.5F, -0.5F}, .color = {0.0F, 1.0F, 1.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .color = {1.0F, 1.0F, 1.0F}},
+    {.pos = {-0.5F, 0.5F, -0.5F}, .color = {0.0F, 0.0F, 0.0F}},
 };
 
 const std::vector<uint16_t> indices = {
-    0, 1, 2,  // triangle 1
-    2, 3, 0   // triangle 2
+    0, 1, 2, 2, 3, 0,  // Front
+    1, 5, 6, 6, 2, 1,  // Right
+    5, 4, 7, 7, 6, 5,  // Back
+    4, 0, 3, 3, 7, 4,  // Left
+    3, 2, 6, 6, 7, 3,  // Top
+    4, 5, 1, 1, 0, 4   // Bottom
 };
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
@@ -179,9 +189,16 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  uboModel_ = glm::rotate(uboModel_, glm::radians(0.1F), glm::vec3(0, 0, 1));
+  uboModel_ = glm::rotate(uboModel_, glm::radians(0.1F), glm::vec3(1, 1, 1));
   UniformBufferObject ubo{
-      .model = uboModel_, .view = glm::mat4(1.0F), .proj = glm::mat4(1.0F)};
+      .model = uboModel_,
+      .view = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0),
+                          glm::vec3(0, 1, 0)),
+      .proj = glm::perspective(
+          glm::radians(60.0F),
+          static_cast<float>(swapchainBundle_.extent.width) /
+              static_cast<float>(swapchainBundle_.extent.height),
+          0.1F, 100.0F)};
   memcpy(commandBuffersInfo_[commandBufferIndex_].uniformBufferMapped, &ubo,
          sizeof(ubo));
   recordCommandBuffer(commandBuffers_[commandBufferIndex_], imageIndex);
