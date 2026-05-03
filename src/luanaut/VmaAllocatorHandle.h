@@ -22,6 +22,12 @@ class VmaAllocatorHandle {
     vmaCreateAllocator(&info, &allocator_);
   }
   ~VmaAllocatorHandle() { vmaDestroyAllocator(allocator_); }
+
+  VmaAllocatorHandle(const VmaAllocatorHandle&) = delete;
+  auto operator=(const VmaAllocatorHandle&) -> VmaAllocatorHandle& = delete;
+  VmaAllocatorHandle(VmaAllocatorHandle&&) = delete;
+  auto operator=(VmaAllocatorHandle&&) -> VmaAllocatorHandle& = delete;
+
   operator VmaAllocator() const { return allocator_; }
 
  private:

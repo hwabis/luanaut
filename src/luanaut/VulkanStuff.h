@@ -12,6 +12,11 @@ class VulkanStuff {
   VulkanStuff(SDL_Window* window);
   ~VulkanStuff();
 
+  VulkanStuff(const VulkanStuff&) = delete;
+  auto operator=(const VulkanStuff&) -> VulkanStuff& = delete;
+  VulkanStuff(VulkanStuff&&) = delete;
+  auto operator=(VulkanStuff&&) -> VulkanStuff& = delete;
+
   auto DrawFrame() -> void;
   auto NotifyResize() -> void;
 
@@ -35,6 +40,12 @@ class VulkanStuff {
     VmaAllocation uniformAllocation;
     void* uniformBufferMapped;
     vk::raii::DescriptorSet descriptorSet;
+  };
+
+  struct DepthBundle {
+    vk::Image image;
+    VmaAllocation allocation;
+    vk::raii::ImageView imageView;
   };
 
   auto recreateSwapchain() -> void;
@@ -86,6 +97,11 @@ class VulkanStuff {
                                      const vk::raii::PipelineLayout& layout)
       -> vk::raii::Pipeline;
   static auto readFile(const std::string& filename) -> std::vector<uint32_t>;
+  static auto createDepthBundle(const vk::raii::PhysicalDevice& physicalDevice,
+                                const vk::raii::Device& device,
+                                const SwapchainBundle& swapchainBundle,
+                                const VmaAllocatorHandle& allocator)
+      -> DepthBundle;
   static auto createCommandPool(const vk::raii::SurfaceKHR& surface,
                                 const vk::raii::Device& device,
                                 const vk::raii::PhysicalDevice& physicalDevice)
@@ -99,6 +115,8 @@ class VulkanStuff {
       const vk::raii::DescriptorPool& pool,
       const vk::raii::DescriptorSetLayout& layout)
       -> std::vector<CommandBufferInfo>;
+  auto uploadVertices() -> void;
+  auto uploadIndices() -> void;
 
   SDL_Window* window_;
 
@@ -124,6 +142,7 @@ class VulkanStuff {
   VmaAllocation vertexAllocation_;
   VkBuffer indexBuffer_;
   VmaAllocation indexAllocation_;
+  DepthBundle depthBundle_;
 
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
