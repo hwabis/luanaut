@@ -213,19 +213,25 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
                         vk::ImageLayout::eDepthAttachmentOptimal,
                         vk::ImageAspectFlagBits::eDepth);
 
-  vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
-  vk::RenderingAttachmentInfo attachmentInfo{
+  vk::RenderingAttachmentInfo colorAttachmentInfo{
       .imageView = *swapchainBundle_.imagesInfo[imageIndex].imageView,
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
       .loadOp = vk::AttachmentLoadOp::eClear,
       .storeOp = vk::AttachmentStoreOp::eStore,
-      .clearValue = clearColor};
+      .clearValue = vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
+  vk::RenderingAttachmentInfo depthAttachmentInfo{
+      .imageView = *depthBundle_.imageView,
+      .imageLayout = vk::ImageLayout::eDepthAttachmentOptimal,
+      .loadOp = vk::AttachmentLoadOp::eClear,
+      .storeOp = vk::AttachmentStoreOp::eDontCare,
+      .clearValue = vk::ClearDepthStencilValue{.depth = 1.0F, .stencil = 0}};
   vk::RenderingInfo renderingInfo{
       .renderArea = {.offset = {.x = 0, .y = 0},
                      .extent = swapchainBundle_.extent},
       .layerCount = 1,
       .colorAttachmentCount = 1,
-      .pColorAttachments = &attachmentInfo};
+      .pColorAttachments = &colorAttachmentInfo,
+      .pDepthAttachment = &depthAttachmentInfo};
 
   cmd.beginRendering(renderingInfo);
   cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline_);
@@ -723,6 +729,13 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
       .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
       .pDynamicStates = dynamicStates.data()};
 
+  vk::PipelineDepthStencilStateCreateInfo depthStencil{
+      .depthTestEnable = vk::True,
+      .depthWriteEnable = vk::True,
+      .depthCompareOp = vk::CompareOp::eLess,
+      .depthBoundsTestEnable = vk::False,
+      .stencilTestEnable = vk::False};
+
   vk::GraphicsPipelineCreateInfo pipelineInfo{
       .stageCount = 2,
       .pStages = shaderStages.data(),
@@ -731,13 +744,15 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
       .pViewportState = &viewportState,
       .pRasterizationState = &rasterizer,
       .pMultisampleState = &multisampling,
+      .pDepthStencilState = &depthStencil,
       .pColorBlendState = &colorBlending,
       .pDynamicState = &dynamicState,
       .layout = layout,
       .renderPass = nullptr};
   vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo{
       .colorAttachmentCount = 1,
-      .pColorAttachmentFormats = &swapchainBundle.format.format};
+      .pColorAttachmentFormats = &swapchainBundle.format.format,
+      .depthAttachmentFormat = vk::Format::eD32Sfloat};
 
   vk::StructureChain<vk::GraphicsPipelineCreateInfo,
                      vk::PipelineRenderingCreateInfo>
