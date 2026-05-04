@@ -195,8 +195,23 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
                                       uint32_t imageIndex) -> void {
   cmd.begin({});
 
-  transitionToColorAttachment(cmd,
-                              swapchainBundle_.imagesInfo[imageIndex].image);
+  transitionImageLayout(cmd, swapchainBundle_.imagesInfo[imageIndex].image,
+                        vk::PipelineStageFlagBits2::eColorAttachmentOutput, {},
+                        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                        vk::AccessFlagBits2::eColorAttachmentWrite,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eColorAttachmentOptimal,
+                        vk::ImageAspectFlagBits::eColor);
+  transitionImageLayout(cmd, depthBundle_.image,
+                        vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                            vk::PipelineStageFlagBits2::eLateFragmentTests,
+                        {},
+                        vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                            vk::PipelineStageFlagBits2::eLateFragmentTests,
+                        vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthAttachmentOptimal,
+                        vk::ImageAspectFlagBits::eDepth);
 
   vk::ClearValue clearColor{vk::ClearColorValue{0.0F, 0.0F, 0.0F, 1.0F}};
   vk::RenderingAttachmentInfo attachmentInfo{
@@ -227,48 +242,38 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
   cmd.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
   cmd.endRendering();
 
-  transitionToPresent(cmd, swapchainBundle_.imagesInfo[imageIndex].image);
+  transitionImageLayout(cmd, swapchainBundle_.imagesInfo[imageIndex].image,
+                        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                        vk::AccessFlagBits2::eColorAttachmentWrite,
+                        vk::PipelineStageFlagBits2::eBottomOfPipe, {},
+                        vk::ImageLayout::eColorAttachmentOptimal,
+                        vk::ImageLayout::ePresentSrcKHR,
+                        vk::ImageAspectFlagBits::eColor);
 
   cmd.end();
 }
 
-auto VulkanStuff::transitionToColorAttachment(
-    const vk::raii::CommandBuffer& cmd,
-    vk::Image image) -> void {
+auto VulkanStuff::transitionImageLayout(const vk::raii::CommandBuffer& cmd,
+                                        vk::Image image,
+                                        vk::PipelineStageFlags2 srcStageMask,
+                                        vk::AccessFlags2 srcAccessMask,
+                                        vk::PipelineStageFlags2 destStageMask,
+                                        vk::AccessFlags2 destAccessMask,
+                                        vk::ImageLayout oldLayout,
+                                        vk::ImageLayout newLayout,
+                                        vk::ImageAspectFlagBits aspectMask)
+    -> void {
   vk::ImageMemoryBarrier2 barrier = {
-      .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-      .srcAccessMask = {},
-      .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-      .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-      .oldLayout = vk::ImageLayout::eUndefined,
-      .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .srcStageMask = srcStageMask,
+      .srcAccessMask = srcAccessMask,
+      .dstStageMask = destStageMask,
+      .dstAccessMask = destAccessMask,
+      .oldLayout = oldLayout,
+      .newLayout = newLayout,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .image = image,
-      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
-                           .baseMipLevel = 0,
-                           .levelCount = 1,
-                           .baseArrayLayer = 0,
-                           .layerCount = 1}};
-  vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
-                                       .imageMemoryBarrierCount = 1,
-                                       .pImageMemoryBarriers = &barrier};
-  cmd.pipelineBarrier2(dependencyInfo);
-}
-
-auto VulkanStuff::transitionToPresent(const vk::raii::CommandBuffer& cmd,
-                                      vk::Image image) -> void {
-  vk::ImageMemoryBarrier2 barrier = {
-      .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-      .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-      .dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe,
-      .dstAccessMask = {},
-      .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
-      .newLayout = vk::ImageLayout::ePresentSrcKHR,
-      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image = image,
-      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+      .subresourceRange = {.aspectMask = aspectMask,
                            .baseMipLevel = 0,
                            .levelCount = 1,
                            .baseArrayLayer = 0,

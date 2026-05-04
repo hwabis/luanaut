@@ -51,11 +51,15 @@ class VulkanStuff {
   auto recreateSwapchain() -> void;
   auto recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
                            uint32_t imageIndex) -> void;
-
-  static auto transitionToColorAttachment(const vk::raii::CommandBuffer& cmd,
-                                          vk::Image image) -> void;
-  static auto transitionToPresent(const vk::raii::CommandBuffer& cmd,
-                                  vk::Image image) -> void;
+  static auto transitionImageLayout(const vk::raii::CommandBuffer& cmd,
+                                    vk::Image image,
+                                    vk::PipelineStageFlags2 srcStageMask,
+                                    vk::AccessFlags2 srcAccessMask,
+                                    vk::PipelineStageFlags2 destStageMask,
+                                    vk::AccessFlags2 destAccessMask,
+                                    vk::ImageLayout oldLayout,
+                                    vk::ImageLayout newLayout,
+                                    vk::ImageAspectFlagBits aspectMask) -> void;
 
   static auto createInstance(const vk::raii::Context& context)
       -> vk::raii::Instance;
