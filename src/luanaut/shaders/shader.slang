@@ -30,5 +30,6 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
   const float3 lightDir = normalize(float3(1, 0.5, 0.2));
   const float4 objectColor = float4(1, 1, 1, 1);
   float brightness = max(dot(vertIn.normal, lightDir), 0);
-  return float4(objectColor.rgb * brightness, 1);
+  float ambient = 0.05;
+  return float4(objectColor.rgb * (brightness + ambient), 1);
 }

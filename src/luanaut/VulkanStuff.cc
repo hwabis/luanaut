@@ -29,35 +29,35 @@ const std::vector<Vertex> vertices = {
     {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
     {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
     // Back (0, 0, -1)
-    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
     {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
     {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
     // Left (-1, 0, 0)
     {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
     {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
     {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
     {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
     // Right (1, 0, 0)
-    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
     {.pos = {0.5F, -0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
     {.pos = {0.5F, 0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
     // Top (0, 1, 0)
     {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
     {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
     // Bottom (0, -1, 0)
+    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
     {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
     {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
     {.pos = {0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
-    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
 };
 
 const std::vector<uint16_t> indices = {
-    0,  3,  1,  1,  3,  2,  4,  5,  7,  5,  6,  7,  8,  11, 9,  9,  11, 10,
-    12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 23, 21, 21, 23, 22,
+    0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  6,  7,  8,  9,  10, 8,  10, 11,
+    12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23,
 };
 
 VulkanStuff::VulkanStuff(SDL_Window* window)
@@ -125,7 +125,7 @@ auto VulkanStuff::DrawFrame() -> void {
   device_.resetFences(*commandBuffersInfo_[commandBufferIndex_].fence);
 
   commandBuffers_[commandBufferIndex_].reset();
-  uboModel_ = glm::rotate(uboModel_, glm::radians(0.5F), glm::vec3(1, 1, 1));
+  uboModel_ = glm::rotate(uboModel_, glm::radians(0.5F), glm::vec3(1, 1, -1));
   constexpr float fov = 60.0F;
   auto proj =
       glm::perspective(glm::radians(fov),
@@ -135,7 +135,7 @@ auto VulkanStuff::DrawFrame() -> void {
   proj[1][1] *= -1;
   UniformBufferObject ubo{
       .model = uboModel_,
-      .view = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0),
+      .view = glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0),
                           glm::vec3(0, 1, 0)),
       .proj = proj};
   memcpy(commandBuffersInfo_[commandBufferIndex_].uniformBufferMapped, &ubo,
