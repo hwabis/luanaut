@@ -8,6 +8,7 @@ namespace luanaut {
 struct Vertex {
   glm::vec3 pos;
   glm::vec3 normal;
+  glm::vec2 uv;
 
   static auto GetBindingDescription() -> vk::VertexInputBindingDescription {
     return {.binding = 0,

@@ -42,7 +42,7 @@ class VulkanStuff {
     vk::raii::DescriptorSet descriptorSet;
   };
 
-  struct DepthBundle {
+  struct ImageBundle {
     vk::Image image;
     VmaAllocation allocation;
     vk::raii::ImageView imageView;
@@ -101,11 +101,6 @@ class VulkanStuff {
                                      const vk::raii::PipelineLayout& layout)
       -> vk::raii::Pipeline;
   static auto readFile(const std::string& filename) -> std::vector<uint32_t>;
-  static auto createDepthBundle(const vk::raii::PhysicalDevice& physicalDevice,
-                                const vk::raii::Device& device,
-                                const SwapchainBundle& swapchainBundle,
-                                const VmaAllocatorHandle& allocator)
-      -> DepthBundle;
   static auto createCommandPool(const vk::raii::SurfaceKHR& surface,
                                 const vk::raii::Device& device,
                                 const vk::raii::PhysicalDevice& physicalDevice)
@@ -119,6 +114,17 @@ class VulkanStuff {
       const vk::raii::DescriptorPool& pool,
       const vk::raii::DescriptorSetLayout& layout)
       -> std::vector<CommandBufferInfo>;
+  static auto createDepthBundle(const vk::raii::PhysicalDevice& physicalDevice,
+                                const vk::raii::Device& device,
+                                const SwapchainBundle& swapchainBundle,
+                                const VmaAllocatorHandle& allocator)
+      -> ImageBundle;
+  static auto createAndUploadTextureBundle(
+      const vk::raii::Device& device,
+      const VmaAllocatorHandle& allocator,
+      const vk::raii::CommandPool& commandPool,
+      const vk::raii::Queue& graphicsQueue) -> ImageBundle;
+  // todo there has to be a way to un-c-ify these lol
   auto uploadVertices() -> void;
   auto uploadIndices() -> void;
 
@@ -142,15 +148,17 @@ class VulkanStuff {
   vk::raii::Pipeline graphicsPipeline_;
 
   VmaAllocatorHandle allocator_;
-  VkBuffer vertexBuffer_;
-  VmaAllocation vertexAllocation_;
-  VkBuffer indexBuffer_;
-  VmaAllocation indexAllocation_;
-  DepthBundle depthBundle_;
 
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
   std::vector<CommandBufferInfo> commandBuffersInfo_;
+
+  VkBuffer vertexBuffer_;
+  VmaAllocation vertexAllocation_;
+  VkBuffer indexBuffer_;
+  VmaAllocation indexAllocation_;
+  ImageBundle depthBundle_;
+  ImageBundle textureBundle_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;

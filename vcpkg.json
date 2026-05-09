@@ -9,6 +9,7 @@
     "gtest",
     "vulkan-headers",
     "vulkan-memory-allocator",
+    "stb",
     {
       "name": "sdl3",
       "features": ["vulkan"]

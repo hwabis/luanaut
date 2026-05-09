@@ -1,13 +1,15 @@
+#include <vulkan/vulkan_core.h>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
-#include "VulkanStuff.h"
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
 #include <array>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
+#include "VulkanStuff.h"
 #include "shaders/UniformBufferObject.h"
 #include "shaders/Vertex.h"
+#include "stb_image.h"
 
 namespace luanaut {
 
@@ -24,35 +26,131 @@ constexpr int commandBufferCount = 2;
 
 const std::vector<Vertex> vertices = {
     // Front (0, 0, 1)
-    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
-    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
-    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 0.0F, 1.0F}},
+    {
+        .pos = {-0.5F, -0.5F, 0.5F},
+        .normal = {0.0F, 0.0F, 1.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, -0.5F, 0.5F},
+        .normal = {0.0F, 0.0F, 1.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, 0.5F},
+        .normal = {0.0F, 0.0F, 1.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {-0.5F, 0.5F, 0.5F},
+        .normal = {0.0F, 0.0F, 1.0F},
+        .uv = {0.0F, 1.0F},
+    },
     // Back (0, 0, -1)
-    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
-    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
-    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 0.0F, -1.0F}},
+    {
+        .pos = {0.5F, -0.5F, -0.5F},
+        .normal = {0.0F, 0.0F, -1.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, -0.5F, -0.5F},
+        .normal = {0.0F, 0.0F, -1.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, 0.5F, -0.5F},
+        .normal = {0.0F, 0.0F, -1.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, -0.5F},
+        .normal = {0.0F, 0.0F, -1.0F},
+        .uv = {0.0F, 1.0F},
+    },
     // Left (-1, 0, 0)
-    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
-    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
-    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
-    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {-1.0F, 0.0F, 0.0F}},
+    {
+        .pos = {-0.5F, -0.5F, -0.5F},
+        .normal = {-1.0F, 0.0F, 0.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, -0.5F, 0.5F},
+        .normal = {-1.0F, 0.0F, 0.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, 0.5F, 0.5F},
+        .normal = {-1.0F, 0.0F, 0.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {-0.5F, 0.5F, -0.5F},
+        .normal = {-1.0F, 0.0F, 0.0F},
+        .uv = {0.0F, 1.0F},
+    },
     // Right (1, 0, 0)
-    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {1.0F, 0.0F, 0.0F}},
+    {
+        .pos = {0.5F, -0.5F, 0.5F},
+        .normal = {1.0F, 0.0F, 0.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, -0.5F, -0.5F},
+        .normal = {1.0F, 0.0F, 0.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, -0.5F},
+        .normal = {1.0F, 0.0F, 0.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, 0.5F},
+        .normal = {1.0F, 0.0F, 0.0F},
+        .uv = {0.0F, 1.0F},
+    },
     // Top (0, 1, 0)
-    {.pos = {-0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
-    {.pos = {-0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, 0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
-    {.pos = {0.5F, 0.5F, -0.5F}, .normal = {0.0F, 1.0F, 0.0F}},
+    {
+        .pos = {-0.5F, 0.5F, -0.5F},
+        .normal = {0.0F, 1.0F, 0.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, 0.5F, 0.5F},
+        .normal = {0.0F, 1.0F, 0.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, 0.5F},
+        .normal = {0.0F, 1.0F, 0.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {0.5F, 0.5F, -0.5F},
+        .normal = {0.0F, 1.0F, 0.0F},
+        .uv = {0.0F, 1.0F},
+    },
     // Bottom (0, -1, 0)
-    {.pos = {-0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
-    {.pos = {-0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
-    {.pos = {0.5F, -0.5F, -0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
-    {.pos = {0.5F, -0.5F, 0.5F}, .normal = {0.0F, -1.0F, 0.0F}},
+    {
+        .pos = {-0.5F, -0.5F, 0.5F},
+        .normal = {0.0F, -1.0F, 0.0F},
+        .uv = {0.0F, 0.0F},
+    },
+    {
+        .pos = {-0.5F, -0.5F, -0.5F},
+        .normal = {0.0F, -1.0F, 0.0F},
+        .uv = {1.0F, 0.0F},
+    },
+    {
+        .pos = {0.5F, -0.5F, -0.5F},
+        .normal = {0.0F, -1.0F, 0.0F},
+        .uv = {1.0F, 1.0F},
+    },
+    {
+        .pos = {0.5F, -0.5F, 0.5F},
+        .normal = {0.0F, -1.0F, 0.0F},
+        .uv = {0.0F, 1.0F},
+    },
 };
 
 const std::vector<uint16_t> indices = {
@@ -78,29 +176,34 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       graphicsPipeline_(
           createGraphicsPipeline(device_, swapchainBundle_, pipelineLayout_)),
       allocator_(*physicalDevice_, *device_, *instance_),
-      depthBundle_(createDepthBundle(physicalDevice_,
-                                     device_,
-                                     swapchainBundle_,
-                                     allocator_)),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
       commandBuffersInfo_(createCommandBuffersInfo(device_,
                                                    allocator_,
                                                    descriptorPool_,
-                                                   descriptorSetLayout_)) {
+                                                   descriptorSetLayout_)),
+      depthBundle_(createDepthBundle(physicalDevice_,
+                                     device_,
+                                     swapchainBundle_,
+                                     allocator_)),
+      textureBundle_(createAndUploadTextureBundle(device_,
+                                                  allocator_,
+                                                  commandPool_,
+                                                  graphicsQueue_)) {
   uploadVertices();
   uploadIndices();
 }
 
 VulkanStuff::~VulkanStuff() {
   device_.waitIdle();
-  // todo raii wrap VmaAllocation
+  // todo raii wrap these ???
   for (auto& info : commandBuffersInfo_) {
     vmaDestroyBuffer(allocator_, info.uniformBuffer, info.uniformAllocation);
   }
   vmaDestroyBuffer(allocator_, vertexBuffer_, vertexAllocation_);
   vmaDestroyBuffer(allocator_, indexBuffer_, indexAllocation_);
   vmaDestroyImage(allocator_, depthBundle_.image, depthBundle_.allocation);
+  vmaDestroyImage(allocator_, textureBundle_.image, textureBundle_.allocation);
 }
 
 auto VulkanStuff::DrawFrame() -> void {
@@ -781,7 +884,7 @@ auto VulkanStuff::createDepthBundle(
     const vk::raii::PhysicalDevice& physicalDevice,
     const vk::raii::Device& device,
     const SwapchainBundle& swapchainBundle,
-    const VmaAllocatorHandle& allocator) -> DepthBundle {
+    const VmaAllocatorHandle& allocator) -> ImageBundle {
   std::vector<vk::Format> formatCandidates{vk::Format::eD32Sfloat,
                                            vk::Format::eD32SfloatS8Uint,
                                            vk::Format::eD24UnormS8Uint};
@@ -991,7 +1094,6 @@ auto VulkanStuff::uploadVertices() -> void {
   vk::SubmitInfo submitInfo{.commandBufferCount = 1,
                             .pCommandBuffers = &*transferCmdBuf};
   graphicsQueue_.submit(submitInfo);
-
   graphicsQueue_.waitIdle();
   vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
 }
@@ -1009,7 +1111,6 @@ auto VulkanStuff::uploadIndices() -> void {
       .queueFamilyIndexCount = 0,
       .pQueueFamilyIndices = nullptr,
   };
-
   VmaAllocationCreateInfo stagingAllocInfo{
       .flags = 0,
       .usage = VMA_MEMORY_USAGE_CPU_ONLY,
@@ -1020,7 +1121,6 @@ auto VulkanStuff::uploadIndices() -> void {
       .pUserData = nullptr,
       .priority = 0.0F,
   };
-
   vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
                   &stagingAllocation, nullptr);
   void* data;
@@ -1052,9 +1152,152 @@ auto VulkanStuff::uploadIndices() -> void {
   vk::SubmitInfo submitInfo{.commandBufferCount = 1,
                             .pCommandBuffers = &*transferCmdBuf};
   graphicsQueue_.submit(submitInfo);
-
   graphicsQueue_.waitIdle();
   vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
+}
+
+auto VulkanStuff::createAndUploadTextureBundle(
+    const vk::raii::Device& device,
+    const VmaAllocatorHandle& allocator,
+    const vk::raii::CommandPool& commandPool,
+    const vk::raii::Queue& graphicsQueue) -> ImageBundle {
+  int width;
+  int height;
+  int channels;
+  stbi_uc* pixels =
+      stbi_load(TEXTURE_PATH, &width, &height, &channels, STBI_rgb_alpha);
+  constexpr int rgbaChannelCount = 4;
+  VkDeviceSize size =
+      static_cast<VkDeviceSize>(width) * height * rgbaChannelCount;
+
+  VkBuffer stagingBuffer;
+  VmaAllocation stagingAllocation;
+  VkBufferCreateInfo stagingInfo{
+      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .size = size,
+      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+  };
+  VmaAllocationCreateInfo stagingAllocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  vmaCreateBuffer(allocator, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
+                  &stagingAllocation, nullptr);
+  void* data;
+  vmaMapMemory(allocator, stagingAllocation, &data);
+  memcpy(data, pixels, size);
+  vmaUnmapMemory(allocator, stagingAllocation);
+
+  VkImageCreateInfo imageInfo{
+      .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .imageType = VK_IMAGE_TYPE_2D,
+      .format = VK_FORMAT_R8G8B8A8_SRGB,
+      .extent = {(uint32_t)width, (uint32_t)height, 1},
+      .mipLevels = 1,
+      .arrayLayers = 1,
+      .samples = VK_SAMPLE_COUNT_1_BIT,
+      .tiling = VK_IMAGE_TILING_OPTIMAL,
+      .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+  };
+  VmaAllocationCreateInfo allocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  VkImage textureImage;
+  VmaAllocation textureAllocation;
+  vmaCreateImage(allocator, &imageInfo, &allocInfo, &textureImage,
+                 &textureAllocation, nullptr);
+
+  vk::CommandBufferAllocateInfo cmdBufInfo{
+      .commandPool = commandPool,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1};
+  auto transferCmdBuf =
+      std::move(vk::raii::CommandBuffers(device, cmdBufInfo).front());
+  transferCmdBuf.begin(
+      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  transitionImageLayout(
+      transferCmdBuf, textureImage, vk::PipelineStageFlagBits2::eTopOfPipe, {},
+      vk::PipelineStageFlagBits2::eTransfer,
+      vk::AccessFlagBits2::eTransferWrite, vk::ImageLayout::eUndefined,
+      vk::ImageLayout::eTransferDstOptimal, vk::ImageAspectFlagBits::eColor);
+  vk::BufferImageCopy2 regions{
+      .bufferOffset = 0,
+      .bufferRowLength = 0,
+      .bufferImageHeight = 0,
+      .imageSubresource =
+          {
+              .aspectMask = vk::ImageAspectFlagBits::eColor,
+              .mipLevel = 0,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+          },
+      .imageOffset = {.x = 0, .y = 0, .z = 0},
+      .imageExtent = {.width = (uint32_t)width,
+                      .height = (uint32_t)height,
+                      .depth = 1},
+  };
+  vk::CopyBufferToImageInfo2 copyInfo{
+      .srcBuffer = stagingBuffer,
+      .dstImage = textureImage,
+      .dstImageLayout = vk::ImageLayout::eTransferDstOptimal,
+      .regionCount = 1,
+      .pRegions = &regions,
+  };
+  transferCmdBuf.copyBufferToImage2(copyInfo);
+  transitionImageLayout(
+      transferCmdBuf, textureImage, vk::PipelineStageFlagBits2::eTransfer,
+      vk::AccessFlagBits2::eTransferWrite,
+      vk::PipelineStageFlagBits2::eFragmentShader,
+      vk::AccessFlagBits2::eShaderRead, vk::ImageLayout::eTransferDstOptimal,
+      vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageAspectFlagBits::eColor);
+  transferCmdBuf.end();
+
+  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
+                            .pCommandBuffers = &*transferCmdBuf};
+  graphicsQueue.submit(submitInfo);
+  graphicsQueue.waitIdle();
+  vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+
+  vk::ImageViewCreateInfo viewInfo{
+      .image = textureImage,
+      .viewType = vk::ImageViewType::e2D,
+      .format = vk::Format::eR8G8B8A8Srgb,
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+  vk::raii::ImageView imageView = vk::raii::ImageView{device, viewInfo};
+
+  return {
+      .image = vk::Image{textureImage},
+      .allocation = textureAllocation,
+      .imageView = std::move(imageView),
+  };
 }
 
 }  // namespace luanaut
