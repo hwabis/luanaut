@@ -108,22 +108,26 @@ class VulkanStuff {
   static auto createCommandBuffers(const vk::raii::Device& device,
                                    const vk::raii::CommandPool& commandPool)
       -> vk::raii::CommandBuffers;
+  static auto createSampler(const vk::raii::Device& device)
+      -> vk::raii::Sampler;
+  static auto createAndUploadTextureBundle(
+      const vk::raii::Device& device,
+      const VmaAllocatorHandle& allocator,
+      const vk::raii::CommandPool& commandPool,
+      const vk::raii::Queue& graphicsQueue) -> ImageBundle;
   static auto createCommandBuffersInfo(
       const vk::raii::Device& device,
       VmaAllocator allocator,
       const vk::raii::DescriptorPool& pool,
-      const vk::raii::DescriptorSetLayout& layout)
+      const vk::raii::DescriptorSetLayout& layout,
+      const vk::raii::Sampler& sampler,
+      const vk::raii::ImageView& textureImageView)
       -> std::vector<CommandBufferInfo>;
   static auto createDepthBundle(const vk::raii::PhysicalDevice& physicalDevice,
                                 const vk::raii::Device& device,
                                 const SwapchainBundle& swapchainBundle,
                                 const VmaAllocatorHandle& allocator)
       -> ImageBundle;
-  static auto createAndUploadTextureBundle(
-      const vk::raii::Device& device,
-      const VmaAllocatorHandle& allocator,
-      const vk::raii::CommandPool& commandPool,
-      const vk::raii::Queue& graphicsQueue) -> ImageBundle;
   // todo there has to be a way to un-c-ify these lol
   auto uploadVertices() -> void;
   auto uploadIndices() -> void;
@@ -151,6 +155,10 @@ class VulkanStuff {
 
   vk::raii::CommandPool commandPool_;
   vk::raii::CommandBuffers commandBuffers_;
+
+  vk::raii::Sampler sampler_;
+  ImageBundle textureBundle_;
+
   std::vector<CommandBufferInfo> commandBuffersInfo_;
 
   VkBuffer vertexBuffer_;
@@ -158,7 +166,6 @@ class VulkanStuff {
   VkBuffer indexBuffer_;
   VmaAllocation indexAllocation_;
   ImageBundle depthBundle_;
-  ImageBundle textureBundle_;
 
   uint32_t commandBufferIndex_ = 0;
   bool framebufferResized_ = false;

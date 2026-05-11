@@ -178,18 +178,21 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
       allocator_(*physicalDevice_, *device_, *instance_),
       commandPool_(createCommandPool(surface_, device_, physicalDevice_)),
       commandBuffers_(createCommandBuffers(device_, commandPool_)),
-      commandBuffersInfo_(createCommandBuffersInfo(device_,
-                                                   allocator_,
-                                                   descriptorPool_,
-                                                   descriptorSetLayout_)),
-      depthBundle_(createDepthBundle(physicalDevice_,
-                                     device_,
-                                     swapchainBundle_,
-                                     allocator_)),
+      sampler_(createSampler(device_)),
       textureBundle_(createAndUploadTextureBundle(device_,
                                                   allocator_,
                                                   commandPool_,
-                                                  graphicsQueue_)) {
+                                                  graphicsQueue_)),
+      commandBuffersInfo_(createCommandBuffersInfo(device_,
+                                                   allocator_,
+                                                   descriptorPool_,
+                                                   descriptorSetLayout_,
+                                                   sampler_,
+                                                   textureBundle_.imageView)),
+      depthBundle_(createDepthBundle(physicalDevice_,
+                                     device_,
+                                     swapchainBundle_,
+                                     allocator_)) {
   uploadVertices();
   uploadIndices();
 }
@@ -714,13 +717,17 @@ auto VulkanStuff::createSwapchainBundle(
 
 auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
     -> vk::raii::DescriptorPool {
-  vk::DescriptorPoolSize poolSize{.type = vk::DescriptorType::eUniformBuffer,
-                                  .descriptorCount = commandBufferCount};
+  vk::DescriptorPoolSize uboSize{.type = vk::DescriptorType::eUniformBuffer,
+                                 .descriptorCount = commandBufferCount};
+  vk::DescriptorPoolSize samplerSize{
+      .type = vk::DescriptorType::eCombinedImageSampler,
+      .descriptorCount = commandBufferCount};
+  std::array<vk::DescriptorPoolSize, 2> bindings = {uboSize, samplerSize};
   vk::DescriptorPoolCreateInfo poolInfo{
       .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
       .maxSets = commandBufferCount,
-      .poolSizeCount = 1,
-      .pPoolSizes = &poolSize};
+      .poolSizeCount = 2,
+      .pPoolSizes = bindings.data()};
 
   return {device, poolInfo};
 }
@@ -732,8 +739,16 @@ auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
       .descriptorType = vk::DescriptorType::eUniformBuffer,
       .descriptorCount = 1,
       .stageFlags = vk::ShaderStageFlagBits::eVertex};
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 1,
-                                               .pBindings = &layoutBinding};
+  vk::DescriptorSetLayoutBinding samplerBinding{
+      .binding = 1,
+      .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eFragment,
+  };
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {layoutBinding,
+                                                            samplerBinding};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 2,
+                                               .pBindings = bindings.data()};
 
   return {device, layoutInfo};
 }
@@ -880,77 +895,6 @@ auto VulkanStuff::readFile(const std::string& filename)
   return buffer;
 }
 
-auto VulkanStuff::createDepthBundle(
-    const vk::raii::PhysicalDevice& physicalDevice,
-    const vk::raii::Device& device,
-    const SwapchainBundle& swapchainBundle,
-    const VmaAllocatorHandle& allocator) -> ImageBundle {
-  std::vector<vk::Format> formatCandidates{vk::Format::eD32Sfloat,
-                                           vk::Format::eD32SfloatS8Uint,
-                                           vk::Format::eD24UnormS8Uint};
-  auto formatItr = std::ranges::find_if(
-      formatCandidates, [&physicalDevice](vk::Format candidate) {
-        auto props = physicalDevice.getFormatProperties(candidate);
-        return (props.optimalTilingFeatures &
-                vk::FormatFeatureFlagBits::eDepthStencilAttachment) ==
-               vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-      });
-  if (formatItr == formatCandidates.end()) {
-    throw std::runtime_error("failed to find supported format!");
-  }
-  vk::Format depthFormat = *formatItr;
-
-  VkImageCreateInfo imageInfo{
-      .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-      .pNext = nullptr,
-      .flags = 0,
-      .imageType = VK_IMAGE_TYPE_2D,
-      .format = static_cast<VkFormat>(depthFormat),
-      .extent = {swapchainBundle.extent.width, swapchainBundle.extent.height,
-                 1},
-      .mipLevels = 1,
-      .arrayLayers = 1,
-      .samples = VK_SAMPLE_COUNT_1_BIT,
-      .tiling = VK_IMAGE_TILING_OPTIMAL,
-      .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-      .queueFamilyIndexCount = 0,
-      .pQueueFamilyIndices = nullptr,
-      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-  };
-  VmaAllocationCreateInfo allocInfo{
-      .flags = 0,
-      .usage = VMA_MEMORY_USAGE_GPU_ONLY,
-      .requiredFlags = 0,
-      .preferredFlags = 0,
-      .memoryTypeBits = 0,
-      .pool = nullptr,
-      .pUserData = nullptr,
-      .priority = 0.0F,
-  };
-  VkImage depthImage;
-  VmaAllocation depthAllocation;
-  vmaCreateImage(allocator, &imageInfo, &allocInfo, &depthImage,
-                 &depthAllocation, nullptr);
-
-  vk::ImageViewCreateInfo viewInfo{
-      .image = depthImage,
-      .viewType = vk::ImageViewType::e2D,
-      .format = depthFormat,
-      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eDepth,
-                           .baseMipLevel = 0,
-                           .levelCount = 1,
-                           .baseArrayLayer = 0,
-                           .layerCount = 1}};
-  vk::raii::ImageView depthImageView = vk::raii::ImageView{device, viewInfo};
-
-  return {
-      .image = vk::Image{depthImage},
-      .allocation = depthAllocation,
-      .imageView = std::move(depthImageView),
-  };
-}
-
 auto VulkanStuff::createCommandPool(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::Device& device,
@@ -973,187 +917,18 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
   return {device, allocInfo};
 }
 
-auto VulkanStuff::createCommandBuffersInfo(
-    const vk::raii::Device& device,
-    VmaAllocator allocator,
-    const vk::raii::DescriptorPool& pool,
-    const vk::raii::DescriptorSetLayout& layout)
-    -> std::vector<CommandBufferInfo> {
-  std::vector<CommandBufferInfo> infos;
-  infos.reserve(commandBufferCount);
-
-  VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                .pNext = nullptr,
-                                .flags = 0,
-                                .size = sizeof(UniformBufferObject),
-                                .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                .queueFamilyIndexCount = 0,
-                                .pQueueFamilyIndices = nullptr};
-  VmaAllocationCreateInfo allocInfo{.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                                    .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
-                                    .requiredFlags = 0,
-                                    .preferredFlags = 0,
-                                    .memoryTypeBits = 0,
-                                    .pool = nullptr,
-                                    .pUserData = nullptr,
-                                    .priority = 0.0F};
-  std::vector<vk::DescriptorSetLayout> layouts(commandBufferCount, *layout);
-  vk::DescriptorSetAllocateInfo setInfo{
-      .descriptorPool = *pool,
-      .descriptorSetCount = commandBufferCount,
-      .pSetLayouts = layouts.data()};
-  auto allSets = vk::raii::DescriptorSets(device, setInfo);
-
-  for (size_t i = 0; i < commandBufferCount; i++) {
-    CommandBufferInfo info{
-        .fence = {device,
-                  vk::FenceCreateInfo{.flags =
-                                          vk::FenceCreateFlagBits::eSignaled}},
-        .presentCompleteSemaphore = {device, vk::SemaphoreCreateInfo()},
-        .uniformBuffer = nullptr,
-        .uniformAllocation = nullptr,
-        .uniformBufferMapped = nullptr,
-        .descriptorSet = std::move(allSets[i])};
-
-    VmaAllocationInfo allocationInfo;
-    vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &info.uniformBuffer,
-                    &info.uniformAllocation, &allocationInfo);
-    info.uniformBufferMapped = allocationInfo.pMappedData;
-
-    vk::DescriptorBufferInfo bufferDescInfo{
-        .buffer = info.uniformBuffer,
-        .offset = 0,
-        .range = sizeof(UniformBufferObject)};
-    vk::WriteDescriptorSet descriptorWrite{
-        .dstSet = *info.descriptorSet,
-        .dstBinding = 0,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = vk::DescriptorType::eUniformBuffer,
-        .pBufferInfo = &bufferDescInfo};
-    device.updateDescriptorSets(descriptorWrite, nullptr);
-
-    infos.push_back(std::move(info));
-  }
-
-  return infos;
-}
-
-auto VulkanStuff::uploadVertices() -> void {
-  VkBuffer stagingBuffer;
-  VmaAllocation stagingAllocation;
-  VkBufferCreateInfo stagingInfo{
-      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-      .pNext = nullptr,
-      .flags = 0,
-      .size = sizeof(Vertex) * vertices.size(),
-      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-      .queueFamilyIndexCount = 0,
-      .pQueueFamilyIndices = nullptr,
+auto VulkanStuff::createSampler(const vk::raii::Device& device)
+    -> vk::raii::Sampler {
+  vk::SamplerCreateInfo samplerInfo{
+      .magFilter = vk::Filter::eLinear,
+      .minFilter = vk::Filter::eLinear,
+      .addressModeU = vk::SamplerAddressMode::eRepeat,
+      .addressModeV = vk::SamplerAddressMode::eRepeat,
+      .anisotropyEnable = vk::False,
+      .maxLod = 0.0F,
   };
-  VmaAllocationCreateInfo stagingAllocInfo{
-      .flags = 0,
-      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
-      .requiredFlags = 0,
-      .preferredFlags = 0,
-      .memoryTypeBits = 0,
-      .pool = nullptr,
-      .pUserData = nullptr,
-      .priority = 0.0F,
-  };
-  vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
-                  &stagingAllocation, nullptr);
-  void* data;
-  vmaMapMemory(allocator_, stagingAllocation, &data);
-  memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
-  vmaUnmapMemory(allocator_, stagingAllocation);
 
-  VkBufferCreateInfo vertexBufferInfo = stagingInfo;
-  vertexBufferInfo.usage =
-      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  VmaAllocationCreateInfo vertexAllocInfo = stagingAllocInfo;
-  vertexAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-  vmaCreateBuffer(allocator_, &vertexBufferInfo, &vertexAllocInfo,
-                  &vertexBuffer_, &vertexAllocation_, nullptr);
-
-  vk::CommandBufferAllocateInfo allocInfo{
-      .commandPool = commandPool_,
-      .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1};
-  auto transferCmdBuf =
-      std::move(vk::raii::CommandBuffers(device_, allocInfo).front());
-  transferCmdBuf.begin(
-      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-  transferCmdBuf.copyBuffer(
-      stagingBuffer, vertexBuffer_,
-      vk::BufferCopy{.size = sizeof(Vertex) * vertices.size()});
-  transferCmdBuf.end();
-
-  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
-                            .pCommandBuffers = &*transferCmdBuf};
-  graphicsQueue_.submit(submitInfo);
-  graphicsQueue_.waitIdle();
-  vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
-}
-
-auto VulkanStuff::uploadIndices() -> void {
-  VkBuffer stagingBuffer;
-  VmaAllocation stagingAllocation;
-  VkBufferCreateInfo stagingInfo{
-      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-      .pNext = nullptr,
-      .flags = 0,
-      .size = sizeof(uint16_t) * indices.size(),
-      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-      .queueFamilyIndexCount = 0,
-      .pQueueFamilyIndices = nullptr,
-  };
-  VmaAllocationCreateInfo stagingAllocInfo{
-      .flags = 0,
-      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
-      .requiredFlags = 0,
-      .preferredFlags = 0,
-      .memoryTypeBits = 0,
-      .pool = nullptr,
-      .pUserData = nullptr,
-      .priority = 0.0F,
-  };
-  vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
-                  &stagingAllocation, nullptr);
-  void* data;
-  vmaMapMemory(allocator_, stagingAllocation, &data);
-  memcpy(data, indices.data(), sizeof(uint16_t) * indices.size());
-  vmaUnmapMemory(allocator_, stagingAllocation);
-
-  VkBufferCreateInfo indexBufferInfo = stagingInfo;
-  indexBufferInfo.usage =
-      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  VmaAllocationCreateInfo indexAllocInfo = stagingAllocInfo;
-  indexAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-  vmaCreateBuffer(allocator_, &indexBufferInfo, &indexAllocInfo, &indexBuffer_,
-                  &indexAllocation_, nullptr);
-
-  vk::CommandBufferAllocateInfo allocInfo{
-      .commandPool = commandPool_,
-      .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1};
-  auto transferCmdBuf =
-      std::move(vk::raii::CommandBuffers(device_, allocInfo).front());
-  transferCmdBuf.begin(
-      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-  transferCmdBuf.copyBuffer(
-      stagingBuffer, indexBuffer_,
-      vk::BufferCopy{.size = sizeof(uint16_t) * indices.size()});
-  transferCmdBuf.end();
-
-  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
-                            .pCommandBuffers = &*transferCmdBuf};
-  graphicsQueue_.submit(submitInfo);
-  graphicsQueue_.waitIdle();
-  vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
+  return {device, samplerInfo};
 }
 
 auto VulkanStuff::createAndUploadTextureBundle(
@@ -1298,6 +1073,275 @@ auto VulkanStuff::createAndUploadTextureBundle(
       .allocation = textureAllocation,
       .imageView = std::move(imageView),
   };
+}
+
+auto VulkanStuff::createCommandBuffersInfo(
+    const vk::raii::Device& device,
+    VmaAllocator allocator,
+    const vk::raii::DescriptorPool& pool,
+    const vk::raii::DescriptorSetLayout& layout,
+    const vk::raii::Sampler& sampler,
+    const vk::raii::ImageView& textureImageView)
+    -> std::vector<CommandBufferInfo> {
+  std::vector<CommandBufferInfo> infos;
+  infos.reserve(commandBufferCount);
+
+  std::vector<vk::DescriptorSetLayout> layouts(commandBufferCount, *layout);
+  vk::DescriptorSetAllocateInfo setInfo{
+      .descriptorPool = *pool,
+      .descriptorSetCount = commandBufferCount,
+      .pSetLayouts = layouts.data()};
+  auto allSets = vk::raii::DescriptorSets(device, setInfo);
+
+  for (size_t i = 0; i < commandBufferCount; i++) {
+    CommandBufferInfo info{
+        .fence = {device,
+                  vk::FenceCreateInfo{.flags =
+                                          vk::FenceCreateFlagBits::eSignaled}},
+        .presentCompleteSemaphore = {device, vk::SemaphoreCreateInfo()},
+        .uniformBuffer = nullptr,
+        .uniformAllocation = nullptr,
+        .uniformBufferMapped = nullptr,
+        .descriptorSet = std::move(allSets[i])};
+
+    constexpr VkBufferCreateInfo bufferInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .size = sizeof(UniformBufferObject),
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr};
+    constexpr VmaAllocationCreateInfo allocInfo{
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
+        .requiredFlags = 0,
+        .preferredFlags = 0,
+        .memoryTypeBits = 0,
+        .pool = nullptr,
+        .pUserData = nullptr,
+        .priority = 0.0F};
+    VmaAllocationInfo allocationInfo;
+    vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &info.uniformBuffer,
+                    &info.uniformAllocation, &allocationInfo);
+    info.uniformBufferMapped = allocationInfo.pMappedData;
+
+    vk::DescriptorBufferInfo uboBufInfo{.buffer = info.uniformBuffer,
+                                        .offset = 0,
+                                        .range = sizeof(UniformBufferObject)};
+    vk::WriteDescriptorSet uboWrite{
+        .dstSet = *info.descriptorSet,
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .pBufferInfo = &uboBufInfo};
+    vk::DescriptorImageInfo imageDescInfo{
+        .sampler = *sampler,
+        .imageView = *textureImageView,
+        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+    };
+    vk::WriteDescriptorSet imageWrite{
+        .dstSet = *info.descriptorSet,
+        .dstBinding = 1,
+        .descriptorCount = 1,
+        .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+        .pImageInfo = &imageDescInfo,
+    };
+    device.updateDescriptorSets({uboWrite, imageWrite}, nullptr);
+
+    infos.push_back(std::move(info));
+  }
+
+  return infos;
+}
+
+auto VulkanStuff::createDepthBundle(
+    const vk::raii::PhysicalDevice& physicalDevice,
+    const vk::raii::Device& device,
+    const SwapchainBundle& swapchainBundle,
+    const VmaAllocatorHandle& allocator) -> ImageBundle {
+  std::vector<vk::Format> formatCandidates{vk::Format::eD32Sfloat,
+                                           vk::Format::eD32SfloatS8Uint,
+                                           vk::Format::eD24UnormS8Uint};
+  auto formatItr = std::ranges::find_if(
+      formatCandidates, [&physicalDevice](vk::Format candidate) {
+        auto props = physicalDevice.getFormatProperties(candidate);
+        return (props.optimalTilingFeatures &
+                vk::FormatFeatureFlagBits::eDepthStencilAttachment) ==
+               vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+      });
+  if (formatItr == formatCandidates.end()) {
+    throw std::runtime_error("failed to find supported format!");
+  }
+  vk::Format depthFormat = *formatItr;
+
+  VkImageCreateInfo imageInfo{
+      .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .imageType = VK_IMAGE_TYPE_2D,
+      .format = static_cast<VkFormat>(depthFormat),
+      .extent = {swapchainBundle.extent.width, swapchainBundle.extent.height,
+                 1},
+      .mipLevels = 1,
+      .arrayLayers = 1,
+      .samples = VK_SAMPLE_COUNT_1_BIT,
+      .tiling = VK_IMAGE_TILING_OPTIMAL,
+      .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+  };
+  VmaAllocationCreateInfo allocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  VkImage depthImage;
+  VmaAllocation depthAllocation;
+  vmaCreateImage(allocator, &imageInfo, &allocInfo, &depthImage,
+                 &depthAllocation, nullptr);
+
+  vk::ImageViewCreateInfo viewInfo{
+      .image = depthImage,
+      .viewType = vk::ImageViewType::e2D,
+      .format = depthFormat,
+      .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eDepth,
+                           .baseMipLevel = 0,
+                           .levelCount = 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1}};
+  vk::raii::ImageView depthImageView = vk::raii::ImageView{device, viewInfo};
+
+  return {
+      .image = vk::Image{depthImage},
+      .allocation = depthAllocation,
+      .imageView = std::move(depthImageView),
+  };
+}
+
+auto VulkanStuff::uploadVertices() -> void {
+  VkBuffer stagingBuffer;
+  VmaAllocation stagingAllocation;
+  VkBufferCreateInfo stagingInfo{
+      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .size = sizeof(Vertex) * vertices.size(),
+      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+  };
+  VmaAllocationCreateInfo stagingAllocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
+                  &stagingAllocation, nullptr);
+  void* data;
+  vmaMapMemory(allocator_, stagingAllocation, &data);
+  memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
+  vmaUnmapMemory(allocator_, stagingAllocation);
+
+  VkBufferCreateInfo vertexBufferInfo = stagingInfo;
+  vertexBufferInfo.usage =
+      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VmaAllocationCreateInfo vertexAllocInfo = stagingAllocInfo;
+  vertexAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  vmaCreateBuffer(allocator_, &vertexBufferInfo, &vertexAllocInfo,
+                  &vertexBuffer_, &vertexAllocation_, nullptr);
+
+  vk::CommandBufferAllocateInfo allocInfo{
+      .commandPool = commandPool_,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1};
+  auto transferCmdBuf =
+      std::move(vk::raii::CommandBuffers(device_, allocInfo).front());
+  transferCmdBuf.begin(
+      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  transferCmdBuf.copyBuffer(
+      stagingBuffer, vertexBuffer_,
+      vk::BufferCopy{.size = sizeof(Vertex) * vertices.size()});
+  transferCmdBuf.end();
+
+  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
+                            .pCommandBuffers = &*transferCmdBuf};
+  graphicsQueue_.submit(submitInfo);
+  graphicsQueue_.waitIdle();
+  vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
+}
+
+auto VulkanStuff::uploadIndices() -> void {
+  VkBuffer stagingBuffer;
+  VmaAllocation stagingAllocation;
+  VkBufferCreateInfo stagingInfo{
+      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .size = sizeof(uint16_t) * indices.size(),
+      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices = nullptr,
+  };
+  VmaAllocationCreateInfo stagingAllocInfo{
+      .flags = 0,
+      .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+      .requiredFlags = 0,
+      .preferredFlags = 0,
+      .memoryTypeBits = 0,
+      .pool = nullptr,
+      .pUserData = nullptr,
+      .priority = 0.0F,
+  };
+  vmaCreateBuffer(allocator_, &stagingInfo, &stagingAllocInfo, &stagingBuffer,
+                  &stagingAllocation, nullptr);
+  void* data;
+  vmaMapMemory(allocator_, stagingAllocation, &data);
+  memcpy(data, indices.data(), sizeof(uint16_t) * indices.size());
+  vmaUnmapMemory(allocator_, stagingAllocation);
+
+  VkBufferCreateInfo indexBufferInfo = stagingInfo;
+  indexBufferInfo.usage =
+      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VmaAllocationCreateInfo indexAllocInfo = stagingAllocInfo;
+  indexAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  vmaCreateBuffer(allocator_, &indexBufferInfo, &indexAllocInfo, &indexBuffer_,
+                  &indexAllocation_, nullptr);
+
+  vk::CommandBufferAllocateInfo allocInfo{
+      .commandPool = commandPool_,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1};
+  auto transferCmdBuf =
+      std::move(vk::raii::CommandBuffers(device_, allocInfo).front());
+  transferCmdBuf.begin(
+      {.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  transferCmdBuf.copyBuffer(
+      stagingBuffer, indexBuffer_,
+      vk::BufferCopy{.size = sizeof(uint16_t) * indices.size()});
+  transferCmdBuf.end();
+
+  vk::SubmitInfo submitInfo{.commandBufferCount = 1,
+                            .pCommandBuffers = &*transferCmdBuf};
+  graphicsQueue_.submit(submitInfo);
+  graphicsQueue_.waitIdle();
+  vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
 }
 
 }  // namespace luanaut
