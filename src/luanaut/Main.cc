@@ -1,7 +1,6 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
-
-#include "VulkanStuff.h"
+#include "VulkanBackend.h"
 
 auto main() -> int {
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
@@ -20,7 +19,7 @@ auto main() -> int {
   }
 
   {
-    luanaut::VulkanStuff vulkan(window);
+    luanaut::VulkanBackend vulkan(window);
     bool running = true;
     while (running) {
       SDL_Event event;

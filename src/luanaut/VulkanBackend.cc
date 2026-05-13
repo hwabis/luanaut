@@ -1,12 +1,12 @@
-#include <vulkan/vulkan_core.h>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
+#include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "VulkanStuff.h"
+#include "VulkanBackend.h"
 #include "shaders/UniformBufferObject.h"
 #include "shaders/Vertex.h"
 #include "stb_image.h"
@@ -158,7 +158,7 @@ const std::vector<uint16_t> indices = {
     12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23,
 };
 
-VulkanStuff::VulkanStuff(SDL_Window* window)
+VulkanBackend::VulkanBackend(SDL_Window* window)
     : window_(window),
       instance_(createInstance(context_)),
       debugMessenger_(createDebugMessenger(instance_)),
@@ -197,7 +197,7 @@ VulkanStuff::VulkanStuff(SDL_Window* window)
   uploadIndices();
 }
 
-VulkanStuff::~VulkanStuff() {
+VulkanBackend::~VulkanBackend() {
   device_.waitIdle();
   // todo raii wrap these ???
   for (auto& info : commandBuffersInfo_) {
@@ -209,7 +209,7 @@ VulkanStuff::~VulkanStuff() {
   vmaDestroyImage(allocator_, textureBundle_.image, textureBundle_.allocation);
 }
 
-auto VulkanStuff::DrawFrame() -> void {
+auto VulkanBackend::DrawFrame() -> void {
   auto fenceResult = device_.waitForFences(
       *commandBuffersInfo_[commandBufferIndex_].fence, vk::True, UINT64_MAX);
   if (fenceResult != vk::Result::eSuccess) {
@@ -280,11 +280,11 @@ auto VulkanStuff::DrawFrame() -> void {
   commandBufferIndex_ = (commandBufferIndex_ + 1) % commandBufferCount;
 }
 
-auto VulkanStuff::NotifyResize() -> void {
+auto VulkanBackend::NotifyResize() -> void {
   framebufferResized_ = true;
 }
 
-auto VulkanStuff::recreateSwapchain() -> void {
+auto VulkanBackend::recreateSwapchain() -> void {
   // SDL_GetWindowSizeInPixels does not return 0x0 on minimize T_T
   vk::SurfaceCapabilitiesKHR caps =
       physicalDevice_.getSurfaceCapabilitiesKHR(*surface_);
@@ -297,8 +297,8 @@ auto VulkanStuff::recreateSwapchain() -> void {
                                            device_, swapchainBundle_.swapchain);
 }
 
-auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
-                                      uint32_t imageIndex) -> void {
+auto VulkanBackend::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
+                                        uint32_t imageIndex) -> void {
   cmd.begin({});
 
   transitionImageLayout(cmd, swapchainBundle_.imagesInfo[imageIndex].image,
@@ -365,15 +365,15 @@ auto VulkanStuff::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
   cmd.end();
 }
 
-auto VulkanStuff::transitionImageLayout(const vk::raii::CommandBuffer& cmd,
-                                        vk::Image image,
-                                        vk::PipelineStageFlags2 srcStageMask,
-                                        vk::AccessFlags2 srcAccessMask,
-                                        vk::PipelineStageFlags2 destStageMask,
-                                        vk::AccessFlags2 destAccessMask,
-                                        vk::ImageLayout oldLayout,
-                                        vk::ImageLayout newLayout,
-                                        vk::ImageAspectFlagBits aspectMask)
+auto VulkanBackend::transitionImageLayout(const vk::raii::CommandBuffer& cmd,
+                                          vk::Image image,
+                                          vk::PipelineStageFlags2 srcStageMask,
+                                          vk::AccessFlags2 srcAccessMask,
+                                          vk::PipelineStageFlags2 destStageMask,
+                                          vk::AccessFlags2 destAccessMask,
+                                          vk::ImageLayout oldLayout,
+                                          vk::ImageLayout newLayout,
+                                          vk::ImageAspectFlagBits aspectMask)
     -> void {
   vk::ImageMemoryBarrier2 barrier = {
       .srcStageMask = srcStageMask,
@@ -396,7 +396,7 @@ auto VulkanStuff::transitionImageLayout(const vk::raii::CommandBuffer& cmd,
   cmd.pipelineBarrier2(dependencyInfo);
 }
 
-auto VulkanStuff::createInstance(const vk::raii::Context& context)
+auto VulkanBackend::createInstance(const vk::raii::Context& context)
     -> vk::raii::Instance {
   constexpr vk::ApplicationInfo appInfo{.apiVersion = vk::ApiVersion14};
 
@@ -457,7 +457,7 @@ auto VulkanStuff::createInstance(const vk::raii::Context& context)
   return {context, createInfo};
 }
 
-auto VulkanStuff::createDebugMessenger(const vk::raii::Instance& instance)
+auto VulkanBackend::createDebugMessenger(const vk::raii::Instance& instance)
     -> vk::raii::DebugUtilsMessengerEXT {
   if (!enableValidationLayers) {
     return nullptr;
@@ -482,7 +482,7 @@ VKAPI_ATTR vk::Bool32 VKAPI_CALL
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
 // NOLINTNEXTLINE(modernize-use-trailing-return-type)
-VulkanStuff::debugCallback(
+VulkanBackend::debugCallback(
     vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 #pragma clang diagnostic pop
     vk::DebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -506,8 +506,8 @@ VulkanStuff::debugCallback(
   return vk::False;
 }
 
-auto VulkanStuff::createSurface(SDL_Window* window,
-                                const vk::raii::Instance& instance)
+auto VulkanBackend::createSurface(SDL_Window* window,
+                                  const vk::raii::Instance& instance)
     -> vk::raii::SurfaceKHR {
   VkSurfaceKHR rawSurface;
 
@@ -519,7 +519,7 @@ auto VulkanStuff::createSurface(SDL_Window* window,
   return {instance, rawSurface};
 }
 
-auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
+auto VulkanBackend::createPhysicalDevice(const vk::raii::Instance& instance)
     -> vk::raii::PhysicalDevice {
   auto physicalDevices = instance.enumeratePhysicalDevices();
   auto const deviceIter =
@@ -576,7 +576,7 @@ auto VulkanStuff::createPhysicalDevice(const vk::raii::Instance& instance)
   return *deviceIter;
 }
 
-auto VulkanStuff::createLogicalDevice(
+auto VulkanBackend::createLogicalDevice(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::Device {
   constexpr float queuePriority = 0.5F;
@@ -606,7 +606,7 @@ auto VulkanStuff::createLogicalDevice(
   return {physicalDevice, deviceCreateInfo};
 }
 
-auto VulkanStuff::findGraphicsQueueIndex(
+auto VulkanBackend::findGraphicsQueueIndex(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice) -> uint32_t {
   auto qfps = physicalDevice.getQueueFamilyProperties();
@@ -622,7 +622,7 @@ auto VulkanStuff::findGraphicsQueueIndex(
       "Could not find a queue that supports both graphics and present!");
 }
 
-auto VulkanStuff::createSwapchainBundle(
+auto VulkanBackend::createSwapchainBundle(
     SDL_Window* window,
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::PhysicalDevice& physicalDevice,
@@ -715,7 +715,7 @@ auto VulkanStuff::createSwapchainBundle(
   };
 }
 
-auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
+auto VulkanBackend::createDescriptorPool(const vk::raii::Device& device)
     -> vk::raii::DescriptorPool {
   vk::DescriptorPoolSize uboSize{.type = vk::DescriptorType::eUniformBuffer,
                                  .descriptorCount = commandBufferCount};
@@ -732,7 +732,7 @@ auto VulkanStuff::createDescriptorPool(const vk::raii::Device& device)
   return {device, poolInfo};
 }
 
-auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
+auto VulkanBackend::createDescriptorSetLayout(const vk::raii::Device& device)
     -> vk::raii::DescriptorSetLayout {
   vk::DescriptorSetLayoutBinding layoutBinding{
       .binding = 0,
@@ -753,7 +753,7 @@ auto VulkanStuff::createDescriptorSetLayout(const vk::raii::Device& device)
   return {device, layoutInfo};
 }
 
-auto VulkanStuff::createPipelineLayout(
+auto VulkanBackend::createPipelineLayout(
     const vk::raii::Device& device,
     const vk::raii::DescriptorSetLayout& descriptorSetLayout)
     -> vk::raii::PipelineLayout {
@@ -764,10 +764,10 @@ auto VulkanStuff::createPipelineLayout(
   };
 }
 
-auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
-                                         const SwapchainBundle& swapchainBundle,
-                                         const vk::raii::PipelineLayout& layout)
-    -> vk::raii::Pipeline {
+auto VulkanBackend::createGraphicsPipeline(
+    const vk::raii::Device& device,
+    const SwapchainBundle& swapchainBundle,
+    const vk::raii::PipelineLayout& layout) -> vk::raii::Pipeline {
   auto shaderSpirV = readFile(SHADER_PATH);
   vk::ShaderModuleCreateInfo createInfo{
       .codeSize = shaderSpirV.size() * sizeof(uint32_t),
@@ -880,7 +880,7 @@ auto VulkanStuff::createGraphicsPipeline(const vk::raii::Device& device,
           pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()};
 }
 
-auto VulkanStuff::readFile(const std::string& filename)
+auto VulkanBackend::readFile(const std::string& filename)
     -> std::vector<uint32_t> {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
@@ -895,7 +895,7 @@ auto VulkanStuff::readFile(const std::string& filename)
   return buffer;
 }
 
-auto VulkanStuff::createCommandPool(
+auto VulkanBackend::createCommandPool(
     const vk::raii::SurfaceKHR& surface,
     const vk::raii::Device& device,
     const vk::raii::PhysicalDevice& physicalDevice) -> vk::raii::CommandPool {
@@ -907,9 +907,9 @@ auto VulkanStuff::createCommandPool(
   return {device, poolInfo};
 }
 
-auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
-                                       const vk::raii::CommandPool& commandPool)
-    -> vk::raii::CommandBuffers {
+auto VulkanBackend::createCommandBuffers(
+    const vk::raii::Device& device,
+    const vk::raii::CommandPool& commandPool) -> vk::raii::CommandBuffers {
   vk::CommandBufferAllocateInfo allocInfo{
       .commandPool = commandPool,
       .level = vk::CommandBufferLevel::ePrimary,
@@ -917,7 +917,7 @@ auto VulkanStuff::createCommandBuffers(const vk::raii::Device& device,
   return {device, allocInfo};
 }
 
-auto VulkanStuff::createSampler(const vk::raii::Device& device)
+auto VulkanBackend::createSampler(const vk::raii::Device& device)
     -> vk::raii::Sampler {
   vk::SamplerCreateInfo samplerInfo{
       .magFilter = vk::Filter::eLinear,
@@ -931,7 +931,7 @@ auto VulkanStuff::createSampler(const vk::raii::Device& device)
   return {device, samplerInfo};
 }
 
-auto VulkanStuff::createAndUploadTextureBundle(
+auto VulkanBackend::createAndUploadTextureBundle(
     const vk::raii::Device& device,
     const VmaAllocatorHandle& allocator,
     const vk::raii::CommandPool& commandPool,
@@ -1075,7 +1075,7 @@ auto VulkanStuff::createAndUploadTextureBundle(
   };
 }
 
-auto VulkanStuff::createCommandBuffersInfo(
+auto VulkanBackend::createCommandBuffersInfo(
     const vk::raii::Device& device,
     VmaAllocator allocator,
     const vk::raii::DescriptorPool& pool,
@@ -1157,7 +1157,7 @@ auto VulkanStuff::createCommandBuffersInfo(
   return infos;
 }
 
-auto VulkanStuff::createDepthBundle(
+auto VulkanBackend::createDepthBundle(
     const vk::raii::PhysicalDevice& physicalDevice,
     const vk::raii::Device& device,
     const SwapchainBundle& swapchainBundle,
@@ -1228,7 +1228,7 @@ auto VulkanStuff::createDepthBundle(
   };
 }
 
-auto VulkanStuff::uploadVertices() -> void {
+auto VulkanBackend::uploadVertices() -> void {
   VkBuffer stagingBuffer;
   VmaAllocation stagingAllocation;
   VkBufferCreateInfo stagingInfo{
@@ -1286,7 +1286,7 @@ auto VulkanStuff::uploadVertices() -> void {
   vmaDestroyBuffer(allocator_, stagingBuffer, stagingAllocation);
 }
 
-auto VulkanStuff::uploadIndices() -> void {
+auto VulkanBackend::uploadIndices() -> void {
   VkBuffer stagingBuffer;
   VmaAllocation stagingAllocation;
   VkBufferCreateInfo stagingInfo{

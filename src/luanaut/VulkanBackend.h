@@ -7,15 +7,15 @@
 
 namespace luanaut {
 
-class VulkanStuff {
+class VulkanBackend {
  public:
-  VulkanStuff(SDL_Window* window);
-  ~VulkanStuff();
+  VulkanBackend(SDL_Window* window);
+  ~VulkanBackend();
 
-  VulkanStuff(const VulkanStuff&) = delete;
-  auto operator=(const VulkanStuff&) -> VulkanStuff& = delete;
-  VulkanStuff(VulkanStuff&&) = delete;
-  auto operator=(VulkanStuff&&) -> VulkanStuff& = delete;
+  VulkanBackend(const VulkanBackend&) = delete;
+  auto operator=(const VulkanBackend&) -> VulkanBackend& = delete;
+  VulkanBackend(VulkanBackend&&) = delete;
+  auto operator=(VulkanBackend&&) -> VulkanBackend& = delete;
 
   auto DrawFrame() -> void;
   auto NotifyResize() -> void;

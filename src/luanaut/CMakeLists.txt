@@ -11,7 +11,7 @@ find_package(Stb REQUIRED)
 add_executable(luanaut
   Implementations.cc
   Main.cc
-  VulkanStuff.cc
+  VulkanBackend.cc
 )
 
 set_target_defaults(luanaut)
