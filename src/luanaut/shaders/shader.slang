@@ -32,9 +32,9 @@ VSOutput vertMain(VSInput input) {
 
 [shader("fragment")]
 float4 fragMain(VSOutput vertIn) : SV_TARGET {
-  const float3 lightDir = normalize(float3(1, 0.5, 0.2));
-  float brightness = max(dot(vertIn.normal, lightDir), 0);
-  float ambient = 0.05;
+  float3 normal = normalize(vertIn.normal);
+  const float3 lightDir = normalize(float3(0, 0, 1));
+  float brightness = max(dot(normal, lightDir), 0);
   float4 texColor = texture.Sample(vertIn.uv);
-  return float4(texColor.rgb * (brightness + ambient), texColor.a);
+  return float4(texColor.rgb * brightness, texColor.a);
 }

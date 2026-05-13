@@ -1,12 +1,12 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
+#include "VulkanBackend.h"
 #include <SDL3/SDL_events.h>
 #include <spdlog/spdlog.h>
 #include <vulkan/vulkan_core.h>
 #include <array>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "VulkanBackend.h"
 #include "shaders/UniformBufferObject.h"
 #include "shaders/Vertex.h"
 #include "stb_image.h"
@@ -295,6 +295,10 @@ auto VulkanBackend::recreateSwapchain() -> void {
   device_.waitIdle();
   swapchainBundle_ = createSwapchainBundle(window_, surface_, physicalDevice_,
                                            device_, swapchainBundle_.swapchain);
+
+  vmaDestroyImage(allocator_, depthBundle_.image, depthBundle_.allocation);
+  depthBundle_ =
+      createDepthBundle(physicalDevice_, device_, swapchainBundle_, allocator_);
 }
 
 auto VulkanBackend::recordCommandBuffer(const vk::raii::CommandBuffer& cmd,
