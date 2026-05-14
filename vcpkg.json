@@ -1,18 +1,5 @@
 {
   "name": "luanaut",
   "version-string": "1.0.0",
-  "dependencies": [
-    "spdlog",
-    "glm",
-    "tinygltf",
-    "sol2",
-    "gtest",
-    "vulkan-headers",
-    "vulkan-memory-allocator",
-    "stb",
-    {
-      "name": "sdl3",
-      "features": ["vulkan"]
-    }
-  ]
+  "dependencies": ["glm", "gtest", "sdl3", "sol2", "spdlog", "tinygltf"]
 }
