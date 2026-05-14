@@ -6,7 +6,7 @@ find_package(spdlog CONFIG REQUIRED)
 
 add_executable(luanaut
   # todo separate app/engine to different targets
-  src/LuanautGame.cc
+  src/Game.cc
   src/Main.cc
   src/Node.cc
 )
