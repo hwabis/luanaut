@@ -4,15 +4,12 @@
 
 namespace luanaut {
 
-class Game {
+class Game : public Node {
  public:
-  Game(std::unique_ptr<Node> root) : root_(std::move(root)) {}
-
-  auto Update() -> void;
   auto Stop() -> void;
+  [[nodiscard]] auto IsRunning() const -> bool { return isRunning_; }
 
  private:
-  std::unique_ptr<Node> root_;
   bool isRunning_ = true;
 };
 

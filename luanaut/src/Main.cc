@@ -24,22 +24,31 @@ auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
   }
   // todo store window ptr somewhere (probably app later)
 
-  // todo we pass in our app root node which has children and everything
-  auto root = std::make_unique<luanaut::Node>();
-  *appState = new luanaut::Game(std::move(root));
+  auto* game = new luanaut::Game();
+  // todo user adds all the nodes that game would need...
+  game->AddChild(std::make_unique<luanaut::Node>());
+
+  *appState = game;
 
   return SDL_APP_CONTINUE;
 }
 
 auto SDL_AppIterate(void* appState) -> SDL_AppResult {
-  auto* app = static_cast<luanaut::Game*>(appState);
-  app->Update();
+  auto* game = static_cast<luanaut::Game*>(appState);
+
+  if (!game->IsRunning()) {
+    return SDL_APP_SUCCESS;
+  }
+
+  game->UpdateSubTree();
 
   return SDL_APP_CONTINUE;
 }
 
 auto SDL_AppEvent(void* /*appState*/, SDL_Event* event) -> SDL_AppResult {
-  if (event->type == SDL_EVENT_QUIT) {
+  // todo pass event to game. return app_success determined by game.
+  // but for now, hardcode this so I don't have to task manager every time
+  if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
     return SDL_APP_SUCCESS;
   }
 
@@ -47,6 +56,5 @@ auto SDL_AppEvent(void* /*appState*/, SDL_Event* event) -> SDL_AppResult {
 }
 
 auto SDL_AppQuit(void* appState, SDL_AppResult /*result*/) -> void {
-  auto* game = static_cast<luanaut::Game*>(appState);
-  delete game;
+  delete static_cast<luanaut::Game*>(appState);
 }

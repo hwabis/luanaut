@@ -16,11 +16,14 @@ class Node {
 
   glm::mat4x4 transform{1.0F};
 
-  virtual auto Update() -> void;
+  auto UpdateSubTree() -> void;
 
   [[nodiscard]] auto GetChildren() const
       -> const std::vector<std::unique_ptr<Node>>&;
   auto AddChild(std::unique_ptr<Node> node) -> void;
+
+ protected:
+  virtual auto Update() -> void;
 
  private:
   std::vector<std::unique_ptr<Node>> children_;
