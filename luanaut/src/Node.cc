@@ -1,4 +1,5 @@
 #include "Node.h"
+#include <algorithm>
 
 namespace luanaut {
 
@@ -10,6 +11,18 @@ auto Node::UpdateSubTree() -> void {
   }
 }
 
+auto Node::HandleEventSubTree(const SDL_Event& event) -> bool {
+  if (HandleEvent(event)) {
+    return true;
+  }
+
+  bool eventHandled = std::ranges::any_of(children_, [&event](auto& child) {
+    return child->HandleEventSubTree(event);
+  });
+
+  return eventHandled;
+}
+
 auto Node::GetChildren() const -> const std::vector<std::unique_ptr<Node>>& {
   return children_;
 }
@@ -19,5 +32,9 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
 }
 
 auto Node::Update() -> void {}
+
+auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
+  return false;
+}
 
 }  // namespace luanaut
