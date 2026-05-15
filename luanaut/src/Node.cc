@@ -2,7 +2,7 @@
 
 namespace luanaut {
 
-auto Node::Expire() -> void {
+auto Node::Destroy() -> void {
   isAlive_ = false;
 }
 
@@ -19,7 +19,6 @@ auto Node::UpdateSubTree() -> void {
       parent_ == nullptr ? Transform : parent_->worldTransform_ * Transform;
 
   Update();
-
   std::erase_if(children_, [](const auto& child) { return !child->isAlive_; });
 
   for (auto& child : children_) {
@@ -27,7 +26,7 @@ auto Node::UpdateSubTree() -> void {
   }
 }
 
-auto Node::DrawSubTree(std::vector<DrawNode>& out) -> void {
+auto Node::DrawSubTree(std::vector<DrawInfo>& out) -> void {
   Draw(out);
 
   for (auto& child : children_) {
@@ -56,7 +55,7 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
 
 auto Node::Update() -> void {}
 
-auto Node::Draw(std::vector<DrawNode>& /*out*/) -> void {}
+auto Node::Draw(std::vector<DrawInfo>& /*out*/) -> void {}
 
 auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
   return false;

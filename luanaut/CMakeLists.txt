@@ -14,7 +14,7 @@ add_executable(luanaut
 set_target_defaults(luanaut)
 
 target_include_directories(luanaut PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(luanaut

@@ -2,7 +2,7 @@
 #include <SDL3/SDL_events.h>
 #include <glm/glm.hpp>
 #include <memory>
-#include "DrawNode.h"
+#include "DrawInfo.h"
 
 namespace luanaut {
 
@@ -13,17 +13,18 @@ class Node {
 
   Node(const Node&) = delete;
   auto operator=(const Node&) -> Node& = delete;
-  Node(Node&&) = default;
-  auto operator=(Node&&) -> Node& = default;
+  Node(Node&&) = delete;
+  auto operator=(Node&&) -> Node& = delete;
 
+  // todo expose pos/rot/scale instead of this
   glm::mat4x4 Transform{1.0F};
 
-  auto Expire() -> void;
+  auto Destroy() -> void;
   [[nodiscard]] auto GetParent() const -> Node*;
   [[nodiscard]] auto GetWorldTransform() const -> glm::mat4x4;
 
   auto UpdateSubTree() -> void;
-  auto DrawSubTree(std::vector<DrawNode>& out) -> void;
+  auto DrawSubTree(std::vector<DrawInfo>& out) -> void;
   auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
   [[nodiscard]] auto GetChildren() const
@@ -32,7 +33,7 @@ class Node {
 
  protected:
   virtual auto Update() -> void;
-  virtual auto Draw(std::vector<DrawNode>& out) -> void;
+  virtual auto Draw(std::vector<DrawInfo>& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;
 
  private:

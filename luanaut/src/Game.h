@@ -2,18 +2,13 @@
 #include <SDL3/SDL.h>
 #include <memory>
 #include "Node.h"
+#include "SdlHandles.h"
 
 namespace luanaut {
 
 class Game {
  public:
   Game(std::unique_ptr<Node> root);
-  ~Game();
-
-  Game(const Game&) = delete;
-  auto operator=(const Game&) -> Game& = delete;
-  Game(Game&&) = default;
-  auto operator=(Game&&) -> Game& = default;
 
   auto HandleEvent(const SDL_Event& event) -> void;
 
@@ -23,7 +18,10 @@ class Game {
 
  private:
   std::unique_ptr<Node> root_;
-  SDL_Window* window_ = nullptr;
+
+  SdlWindowHandle window_;
+  SdlGpuDeviceHandle device_;
+
   bool isRunning_ = true;
 };
 

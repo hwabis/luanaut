@@ -3,28 +3,23 @@
 
 namespace luanaut {
 
-Game::Game(std::unique_ptr<Node> root) : root_(std::move(root)) {
-  int numDisplays = 0;
-  SDL_DisplayID* displays = SDL_GetDisplays(&numDisplays);
-  if (numDisplays > 0) {
-    const SDL_DisplayMode* mode = SDL_GetDesktopDisplayMode(displays[0]);
-    if (mode == nullptr) {
-      isRunning_ = false;
-      spdlog::error(SDL_GetError());
-    } else {
-      window_ =
-          SDL_CreateWindow("Luanaut", mode->w, mode->h, SDL_WINDOW_RESIZABLE);
-      if (window_ == nullptr) {
-        isRunning_ = false;
-        spdlog::error(SDL_GetError());
-      }
-    }
+Game::Game(std::unique_ptr<Node> root)
+    : root_(std::move(root)),
+      window_(SDL_CreateWindow("Luanaut", 0, 0, SDL_WINDOW_FULLSCREEN)),
+      device_(SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr)) {
+  if (window_ == nullptr) {
+    isRunning_ = false;
+    spdlog::error(SDL_GetError());
+    return;
   }
-  SDL_free(displays);
-}
 
-Game::~Game() {
-  SDL_DestroyWindow(window_);
+  if (device_ == nullptr) {
+    isRunning_ = false;
+    spdlog::error(SDL_GetError());
+    return;
+  }
+
+  SDL_ClaimWindowForGPUDevice(device_, window_);
 }
 
 auto Game::HandleEvent(const SDL_Event& event) -> void {
@@ -40,8 +35,8 @@ auto Game::HandleEvent(const SDL_Event& event) -> void {
 auto Game::Update() -> void {
   root_->UpdateSubTree();
 
-  std::vector<DrawNode> drawNodes;
-  root_->DrawSubTree(drawNodes);
+  std::vector<DrawInfo> drawInfos;
+  root_->DrawSubTree(drawInfos);
   // todo actually draw everything
 }
 
