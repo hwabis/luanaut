@@ -39,6 +39,10 @@ auto Game::HandleEvent(const SDL_Event& event) -> void {
 
 auto Game::Update() -> void {
   root_->UpdateSubTree();
+
+  std::vector<DrawNode> drawNodes;
+  root_->DrawSubTree(drawNodes);
+  // todo actually draw everything
 }
 
 auto Game::SetScene(std::unique_ptr<Node> root) -> void {

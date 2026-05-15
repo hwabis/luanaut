@@ -10,6 +10,14 @@ auto Node::UpdateSubTree() -> void {
   }
 }
 
+auto Node::DrawSubTree(std::vector<DrawNode>& out) -> void {
+  Draw(out);
+
+  for (auto& child : children_) {
+    child->DrawSubTree(out);
+  }
+}
+
 auto Node::HandleEventSubTree(const SDL_Event& event) -> bool {
   for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
     if ((*it)->HandleEventSubTree(event)) {
@@ -29,6 +37,8 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
 }
 
 auto Node::Update() -> void {}
+
+auto Node::Draw(std::vector<DrawNode>& /*out*/) -> void {}
 
 auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
   return false;

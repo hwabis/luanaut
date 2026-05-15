@@ -2,6 +2,7 @@
 #include <SDL3/SDL_events.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include "DrawNode.h"
 
 namespace luanaut {
 
@@ -18,6 +19,7 @@ class Node {
   glm::mat4x4 transform{1.0F};
 
   auto UpdateSubTree() -> void;
+  auto DrawSubTree(std::vector<DrawNode>& out) -> void;
   auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
   [[nodiscard]] auto GetChildren() const
@@ -26,6 +28,7 @@ class Node {
 
  protected:
   virtual auto Update() -> void;
+  virtual auto Draw(std::vector<DrawNode>& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;
 
  private:
