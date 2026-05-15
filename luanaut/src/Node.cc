@@ -2,8 +2,25 @@
 
 namespace luanaut {
 
+auto Node::Expire() -> void {
+  isAlive_ = false;
+}
+
+auto Node::GetParent() const -> Node* {
+  return parent_;
+}
+
+auto Node::GetWorldTransform() const -> glm::mat4x4 {
+  return worldTransform_;
+}
+
 auto Node::UpdateSubTree() -> void {
+  worldTransform_ =
+      parent_ == nullptr ? Transform : parent_->worldTransform_ * Transform;
+
   Update();
+
+  std::erase_if(children_, [](const auto& child) { return !child->isAlive_; });
 
   for (auto& child : children_) {
     child->UpdateSubTree();
@@ -33,6 +50,7 @@ auto Node::GetChildren() const -> const std::vector<std::unique_ptr<Node>>& {
 }
 
 auto Node::AddChild(std::unique_ptr<Node> node) -> void {
+  node->parent_ = this;
   children_.push_back(std::move(node));
 }
 
