@@ -9,6 +9,8 @@ add_executable(luanaut
   src/Game.cc
   src/Main.cc
   src/Node.cc
+  src/Renderer.cc
+  src/ResourceManager.cc
 )
 
 set_target_defaults(luanaut)

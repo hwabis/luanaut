@@ -6,12 +6,13 @@ namespace luanaut {
 
 class MeshNode : public Node {
  public:
-  MeshNode(Mesh mesh, SDL_GPUGraphicsPipeline* pipeline)
-      : mesh_(std::move(mesh)), pipeline_(pipeline) {}
+  MeshNode(Mesh* mesh, Material* material) : mesh_(mesh), material_(material) {}
+
+  // todo override draw, use the material
 
  private:
-  Mesh mesh_;
-  SDL_GPUGraphicsPipeline* pipeline_;
+  Mesh* mesh_;
+  Material* material_;
 };
 
 }  // namespace luanaut

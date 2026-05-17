@@ -2,9 +2,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
 #include <memory>
-#include <string>
 #include "Node.h"
-#include "SdlHandles.h"
+#include "Renderer.h"
+#include "ResourceManager.h"
 
 namespace luanaut {
 
@@ -19,14 +19,10 @@ class Game {
   [[nodiscard]] auto IsRunning() const -> bool;
 
  private:
-  auto createPipeline() -> SDL_GPUGraphicsPipeline*;
-  static auto readFile(const std::string& fileName) -> std::vector<uint8_t>;
-
   std::unique_ptr<Node> root_;
-
-  SdlWindowHandle window_;
-  SdlGpuDeviceHandle device_;
-  std::unordered_map<std::string, SdlGpuGraphicsPipelineHandle> pipelines_;
+  std::unique_ptr<Renderer> renderer_ = std::make_unique<Renderer>();
+  std::unique_ptr<ResourceManager> resources_ =
+      std::make_unique<ResourceManager>();
 
   bool isRunning_ = true;
 };
