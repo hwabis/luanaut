@@ -20,6 +20,7 @@ class Game {
 
  private:
   auto createPipeline() -> SDL_GPUGraphicsPipeline*;
+  static auto readFile(const std::string& fileName) -> std::vector<uint8_t>;
 
   std::unique_ptr<Node> root_;
 

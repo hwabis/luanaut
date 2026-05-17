@@ -1,5 +1,12 @@
 {
   "name": "luanaut",
   "version-string": "1.0.0",
-  "dependencies": ["glm", "gtest", "sdl3", "sol2", "spdlog", "tinygltf"]
+  "dependencies": [
+    "glm",
+    "gtest",
+    { "name": "sdl3", "features": ["vulkan"] },
+    "sol2",
+    "spdlog",
+    "tinygltf"
+  ]
 }
