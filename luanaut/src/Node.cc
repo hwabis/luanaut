@@ -15,8 +15,9 @@ auto Node::GetWorldTransform() const -> glm::mat4x4 {
 }
 
 auto Node::UpdateSubTree() -> void {
-  worldTransform_ =
-      parent_ == nullptr ? Transform : parent_->worldTransform_ * Transform;
+  worldTransform_ = parent_ == nullptr
+                        ? transform.ToMatrix()
+                        : parent_->worldTransform_ * transform.ToMatrix();
 
   Update();
   std::erase_if(children_, [](const auto& child) { return !child->isAlive_; });

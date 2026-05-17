@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include "DrawInfo.h"
+#include "Transform.h"
 
 namespace luanaut {
 
@@ -16,8 +17,7 @@ class Node {
   Node(Node&&) = delete;
   auto operator=(Node&&) -> Node& = delete;
 
-  // todo expose pos/rot/scale instead of this
-  glm::mat4x4 Transform{1.0F};
+  Transform transform{};
 
   auto Destroy() -> void;
   [[nodiscard]] auto GetParent() const -> Node*;
