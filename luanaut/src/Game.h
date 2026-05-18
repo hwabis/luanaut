@@ -4,26 +4,22 @@
 #include <memory>
 #include "Node.h"
 #include "Renderer.h"
-#include "ResourceManager.h"
 
 namespace luanaut {
 
-class Game {
+class Game : public Node {
  public:
-  Game(std::unique_ptr<Node> root);
-
-  auto HandleEvent(const SDL_Event& event) -> void;
-
-  auto Update() -> void;
-  auto SetScene(std::unique_ptr<Node> root) -> void;
+  Game();
   [[nodiscard]] auto IsRunning() const -> bool;
 
- private:
-  std::unique_ptr<Node> root_;
-  std::unique_ptr<Renderer> renderer_ = std::make_unique<Renderer>();
-  std::unique_ptr<ResourceManager> resources_ =
-      std::make_unique<ResourceManager>();
+  // todo we need some sort of scene system
 
+ protected:
+  auto Update() -> void override;
+  auto HandleEvent(const SDL_Event& event) -> bool override;
+
+ private:
+  std::unique_ptr<Renderer> renderer_ = std::make_unique<Renderer>();
   bool isRunning_ = true;
 };
 

@@ -2,6 +2,7 @@
 #include <SDL3/SDL_events.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include "DependencyContainer.h"
 #include "DrawInfo.h"
 #include "Transform.h"
 
@@ -24,6 +25,8 @@ class Node {
   [[nodiscard]] auto GetWorldTransform() const -> glm::mat4x4;
 
   auto UpdateSubTree() -> void;
+  // Technically doesn't have to be public (only invoked by Update)?
+  // But maybe we multithread someday
   auto DrawSubTree(std::vector<DrawInfo>& out) -> void;
   auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
@@ -35,6 +38,9 @@ class Node {
   virtual auto Update() -> void;
   virtual auto Draw(std::vector<DrawInfo>& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;
+
+  std::unique_ptr<DependencyContainer> deps_ =
+      std::make_unique<DependencyContainer>();
 
  private:
   glm::mat4x4 worldTransform_{1.0F};

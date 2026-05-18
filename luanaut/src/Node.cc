@@ -51,6 +51,11 @@ auto Node::GetChildren() const -> const std::vector<std::unique_ptr<Node>>& {
 
 auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   node->parent_ = this;
+
+  auto childDeps = std::make_unique<DependencyContainer>();
+  childDeps->parent = deps_.get();
+  node->deps_ = std::move(childDeps);
+
   children_.push_back(std::move(node));
 }
 

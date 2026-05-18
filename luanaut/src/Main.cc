@@ -2,10 +2,13 @@
 #include <SDL3/SDL_main.h>
 #include <spdlog/spdlog.h>
 #include "Game.h"
-#include "Node.h"
 
 // todo all these SDL_ init methods needs to be abstracted out of the app lol
 // maybe some weird macro thing
+
+class MyAwesomeGame : public luanaut::Game {
+  // todo add some children in ctor
+};
 
 auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
     -> SDL_AppResult {
@@ -14,7 +17,7 @@ auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
     return SDL_APP_FAILURE;
   }
 
-  auto* game = new luanaut::Game(std::make_unique<luanaut::Node>());
+  auto* game = new MyAwesomeGame();
   *appState = game;
 
   return SDL_APP_CONTINUE;
@@ -27,7 +30,7 @@ auto SDL_AppIterate(void* appState) -> SDL_AppResult {
     return SDL_APP_SUCCESS;
   }
 
-  game->Update();
+  game->UpdateSubTree();
 
   return SDL_APP_CONTINUE;
 }
@@ -35,7 +38,7 @@ auto SDL_AppIterate(void* appState) -> SDL_AppResult {
 auto SDL_AppEvent(void* appState, SDL_Event* event) -> SDL_AppResult {
   auto* game = static_cast<luanaut::Game*>(appState);
 
-  game->HandleEvent(*event);
+  game->HandleEventSubTree(*event);
 
   return SDL_APP_CONTINUE;
 }
