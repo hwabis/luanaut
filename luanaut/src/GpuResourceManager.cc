@@ -9,27 +9,34 @@ GpuResourceManager::GpuResourceManager(SDL_Window* window,
                                        SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
-auto GpuResourceManager::CreateMesh() -> const Mesh* {
+auto GpuResourceManager::CreateMesh(const std::vector<Vertex>& vertices,
+                                    const std::vector<uint32_t>& indices)
+    -> const Mesh* {
   SDL_GPUBufferCreateInfo vboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = 0,
+      .size = static_cast<Uint32>(vertices.size() * sizeof(Vertex)),
       .props = 0,
   };
   SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
+  uploadToBuffer(vbo, vertices);
+
   SDL_GPUBufferCreateInfo iboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size = 0,
+      .size = static_cast<Uint32>(indices.size() * sizeof(uint32_t)),
       .props = 0,
   };
   SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
+  uploadToBuffer(ibo, indices);
 
-  meshes_["todo"] = std::make_unique<Mesh>(Mesh{
+  // todo i have no idea how to uniquely key the input.. eventually this should
+  // be a set to cache duplicates
+  meshes_.push_back(std::make_unique<Mesh>(Mesh{
       .vertexBuffer = {device_, vbo},
       .indexBuffer = {device_, ibo},
-      .indexBufferCount = 3,
-  });
+      .indexBufferCount = static_cast<Uint32>(indices.size()),
+  }));
 
-  return meshes_["todo"].get();
+  return meshes_.back().get();
 }
 
 auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
@@ -78,18 +85,31 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
 
   SDL_GPUVertexBufferDescription vertDesc = {
       .slot = 0,
-      .pitch = 0,
+      .pitch = sizeof(Vertex),
       .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
       .instance_step_rate = 0,
   };
 
-  std::array<SDL_GPUVertexAttribute, 0> vertAttributes = {};
+  std::array<SDL_GPUVertexAttribute, 2> vertAttributes = {
+      SDL_GPUVertexAttribute{
+          .location = 0,
+          .buffer_slot = 0,
+          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+          .offset = offsetof(Vertex, pos),
+      },
+      SDL_GPUVertexAttribute{
+          .location = 1,
+          .buffer_slot = 0,
+          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+          .offset = offsetof(Vertex, color),
+      },
+  };
 
   SDL_GPUVertexInputState vertInputState = {
       .vertex_buffer_descriptions = &vertDesc,
-      .num_vertex_buffers = 0,
+      .num_vertex_buffers = 1,
       .vertex_attributes = vertAttributes.data(),
-      .num_vertex_attributes = 0,
+      .num_vertex_attributes = 2,
   };
 
   SDL_GPURasterizerState rasterizerState = {};

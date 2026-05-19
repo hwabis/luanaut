@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "Material.h"
 #include "Mesh.h"
+#include "Vertex.h"
 
 namespace luanaut {
 
@@ -12,8 +13,8 @@ class GpuResourceManager {
  public:
   GpuResourceManager(SDL_Window* window, SDL_GPUDevice* device);
 
-  // todo this is just creating hardcoded triangle... pass stuff in
-  auto CreateMesh() -> const Mesh*;
+  auto CreateMesh(const std::vector<Vertex>& vertices,
+                  const std::vector<uint32_t>& indices) -> const Mesh*;
 
   struct MaterialInfo {
     std::string vertShaderPath;
@@ -28,8 +29,37 @@ class GpuResourceManager {
 
  private:
   static auto readFile(const std::string& fileName) -> std::vector<uint8_t>;
+  template <typename T>
+  auto uploadToBuffer(SDL_GPUBuffer* target, const std::vector<T>& data)
+      -> void {
+    auto size = static_cast<Uint32>(data.size() * sizeof(T));
 
-  std::unordered_map<std::string, std::unique_ptr<Mesh>> meshes_;
+    SDL_GPUTransferBufferCreateInfo transferInfo = {
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size = size,
+        .props = 0,
+    };
+    SDL_GPUTransferBuffer* transferBuf =
+        SDL_CreateGPUTransferBuffer(device_, &transferInfo);
+
+    void* mapped = SDL_MapGPUTransferBuffer(device_, transferBuf, false);
+    memcpy(mapped, data.data(), size);
+    SDL_UnmapGPUTransferBuffer(device_, transferBuf);
+
+    SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(device_);
+    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmd);
+
+    SDL_GPUTransferBufferLocation src = {.transfer_buffer = transferBuf,
+                                         .offset = 0};
+    SDL_GPUBufferRegion dst = {.buffer = target, .offset = 0, .size = size};
+    SDL_UploadToGPUBuffer(copyPass, &src, &dst, false);
+
+    SDL_EndGPUCopyPass(copyPass);
+    SDL_SubmitGPUCommandBuffer(cmd);
+    SDL_ReleaseGPUTransferBuffer(device_, transferBuf);
+  }
+
+  std::vector<std::unique_ptr<Mesh>> meshes_;
   std::unordered_map<std::string, std::unique_ptr<Material>> materials_;
 
   SDL_Window* window_;
