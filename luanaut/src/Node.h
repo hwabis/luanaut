@@ -35,6 +35,8 @@ class Node {
   auto AddChild(std::unique_ptr<Node> node) -> void;
 
  protected:
+  virtual auto Load() -> void;
+
   virtual auto Update() -> void;
   virtual auto Draw(std::vector<DrawInfo>& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;

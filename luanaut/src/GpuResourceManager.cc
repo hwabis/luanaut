@@ -9,12 +9,35 @@ GpuResourceManager::GpuResourceManager(SDL_Window* window,
                                        SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
+auto GpuResourceManager::CreateMesh() -> const Mesh* {
+  SDL_GPUBufferCreateInfo vboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
+      .size = 0,
+      .props = 0,
+  };
+  SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
+  SDL_GPUBufferCreateInfo iboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+      .size = 0,
+      .props = 0,
+  };
+  SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
+
+  meshes_["todo"] = std::make_unique<Mesh>(Mesh{
+      .vertexBuffer = {device_, vbo},
+      .indexBuffer = {device_, ibo},
+      .indexBufferCount = 3,
+  });
+
+  return meshes_["todo"].get();
+}
+
 auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     -> const Material* {
   auto key = info.getKey();
 
-  if (cache_.contains(key)) {
-    return cache_[key].get();
+  if (materials_.contains(key)) {
+    return materials_[key].get();
   }
 
   auto vertCode = readFile(info.vertShaderPath);
@@ -35,7 +58,7 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     throw std::runtime_error(SDL_GetError());
   }
 
-  auto fragCode = readFile(std::string(SHADER_BIN_DIR) + "/triangle.frag.spv");
+  auto fragCode = readFile(info.fragShaderPath);
   SDL_GPUShaderCreateInfo fragInfo = {
       .code_size = fragCode.size(),
       .code = fragCode.data(),
@@ -106,14 +129,14 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     throw std::runtime_error(SDL_GetError());
   }
 
-  cache_[key] = std::make_unique<Material>(Material{
+  materials_[key] = std::make_unique<Material>(Material{
       .pipeline = {device_, pipeline},
   });
 
   SDL_ReleaseGPUShader(device_, vertShader);
   SDL_ReleaseGPUShader(device_, fragShader);
 
-  return cache_[key].get();
+  return materials_[key].get();
 }
 
 auto GpuResourceManager::readFile(const std::string& fileName)

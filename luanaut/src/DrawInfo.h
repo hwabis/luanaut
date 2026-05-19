@@ -9,8 +9,8 @@ namespace luanaut {
 struct DrawInfo {
   glm::mat4 worldTransform{1.0F};
   // what does 2D need or not need?
-  Mesh* mesh = nullptr;
-  Material* material = nullptr;
+  const Mesh* mesh = nullptr;
+  const Material* material = nullptr;
 };
 
 }  // namespace luanaut

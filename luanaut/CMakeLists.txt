@@ -8,6 +8,7 @@ add_executable(luanaut
   # todo separate app/engine to different targets
   src/Game.cc
   src/Main.cc
+  src/MeshNode.cc
   src/Node.cc
   src/Renderer.cc
   src/GpuResourceManager.cc

@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include <spdlog/spdlog.h>
 #include <stdexcept>
 
 namespace luanaut {
@@ -58,12 +59,19 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
     };
     SDL_SetGPUViewport(pass, &viewport);
 
-    SDL_GPUBufferBinding vboBind{.buffer = info.mesh->vertexBuffer,
-                                 .offset = 0};
-    SDL_BindGPUVertexBuffers(pass, 0, &vboBind, 1);
-    SDL_GPUBufferBinding iboBind{.buffer = info.mesh->indexBuffer, .offset = 0};
-    SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-    SDL_DrawGPUIndexedPrimitives(pass, info.mesh->indexBufferCount, 1, 0, 0, 0);
+    // HIGH PRIORITY TODO PLZ REMOVE THIS ASAP
+    if (info.mesh != nullptr) {
+      SDL_GPUBufferBinding vboBind{.buffer = info.mesh->vertexBuffer,
+                                   .offset = 0};
+      SDL_BindGPUVertexBuffers(pass, 0, &vboBind, 1);
+      SDL_GPUBufferBinding iboBind{.buffer = info.mesh->indexBuffer,
+                                   .offset = 0};
+      SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+      SDL_DrawGPUIndexedPrimitives(pass, info.mesh->indexBufferCount, 1, 0, 0,
+                                   0);
+    } else {
+      SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+    }
   }
 
   SDL_EndGPURenderPass(pass);

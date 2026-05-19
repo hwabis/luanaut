@@ -56,8 +56,12 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   childDeps->parent = deps_.get();
   node->deps_ = std::move(childDeps);
 
+  node->Load();
+
   children_.push_back(std::move(node));
 }
+
+auto Node::Load() -> void {}
 
 auto Node::Update() -> void {}
 

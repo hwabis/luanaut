@@ -2,12 +2,14 @@
 #include <SDL3/SDL_main.h>
 #include <spdlog/spdlog.h>
 #include "Game.h"
+#include "MeshNode.h"
 
 // todo all these SDL_ init methods needs to be abstracted out of the app lol
 // maybe some weird macro thing
 
 class MyAwesomeGame : public luanaut::Game {
-  // todo add some children in ctor
+ public:
+  MyAwesomeGame() { AddChild(std::make_unique<luanaut::MeshNode>()); }
 };
 
 auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)

@@ -15,7 +15,7 @@ class DependencyContainer {
   }
 
   template <typename T>
-  auto Resolve() const -> T* {
+  auto Resolve() const -> std::shared_ptr<T> {
     auto itr = deps_.find(typeid(T));
 
     if (itr != deps_.end()) {

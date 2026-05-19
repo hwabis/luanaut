@@ -1,18 +1,16 @@
 #pragma once
-#include "Mesh.h"
 #include "Node.h"
 
 namespace luanaut {
 
 class MeshNode : public Node {
- public:
-  MeshNode(Mesh* mesh, Material* material) : mesh_(mesh), material_(material) {}
-
-  // todo override draw, use the material
+ protected:
+  auto Load() -> void override;
+  auto Draw(std::vector<DrawInfo>& out) -> void override;
 
  private:
-  Mesh* mesh_;
-  Material* material_;
+  const Mesh* mesh_ = nullptr;
+  const Material* material_ = nullptr;
 };
 
 }  // namespace luanaut
