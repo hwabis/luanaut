@@ -13,19 +13,19 @@ class Game : public Node {
   Game(std::unique_ptr<Scene> initialScene);
   ~Game() override;
 
-  auto SwitchScene(std::unique_ptr<Scene> scene) -> void;
+  // We are the only node that requires a kickstart load
+  auto Init() -> void;
 
  protected:
+  auto Load() -> void override;
   auto Update() -> void override;
   auto HandleEvent(const SDL_Event& event) -> bool override;
 
  private:
-  // Only allow scene as sole child
-  using Node::AddChild;
+  std::unique_ptr<Renderer> renderer_;
 
-  Scene* currentScene_ = nullptr;
-
-  std::unique_ptr<Renderer> renderer_ = std::make_unique<Renderer>();
+  // Used as handoff from ctor to load
+  std::unique_ptr<Scene> initialScene_;
 };
 
 }  // namespace luanaut

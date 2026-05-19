@@ -2,27 +2,33 @@
 #include <SDL3/SDL_gpu.h>
 #include "DependencyContainer.h"
 #include "GpuResourceManager.h"
+#include "SceneManager.h"
 
 namespace luanaut {
 
-Game::Game(std::unique_ptr<Scene> initialScene) {
+Game::Game(std::unique_ptr<Scene> initialScene)
+    : renderer_(std::make_unique<Renderer>()),
+      initialScene_(std::move(initialScene)) {
   deps_ = std::make_unique<DependencyContainer>();
-  deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
-                                                    renderer_->GetDevice()));
-
-  SwitchScene(std::move(initialScene));
 }
 
 Game::~Game() {
   deps_.reset();  // Destroy before ~renderer_
 }
 
-auto Game::SwitchScene(std::unique_ptr<Scene> newScene) -> void {
-  if (currentScene_ != nullptr) {
-    currentScene_->Destroy();
-  }
-  currentScene_ = newScene.get();
-  AddChild(std::move(newScene));
+auto Game::Init() -> void {
+  Load();
+}
+
+auto Game::Load() -> void {
+  deps_ = std::make_unique<DependencyContainer>();
+
+  deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
+                                                    renderer_->GetDevice()));
+
+  auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene_));
+  deps_->Cache(std::shared_ptr<SceneManager>(sceneManager.get(), [](auto*) {}));
+  AddChild(std::move(sceneManager));
 }
 
 auto Game::Update() -> void {
