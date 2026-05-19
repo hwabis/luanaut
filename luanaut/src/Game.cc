@@ -21,12 +21,13 @@ auto Game::Init() -> void {
 }
 
 auto Game::Load() -> void {
-  deps_ = std::make_unique<DependencyContainer>();
-
   deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
                                                     renderer_->GetDevice()));
 
   auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene_));
+  // there's something really weird here. questions:
+  // - should cache only accept shared ptr?
+  // - shoudl addchild only accept unique ptr?
   deps_->Cache(std::shared_ptr<SceneManager>(sceneManager.get(), [](auto*) {}));
   AddChild(std::move(sceneManager));
 }
