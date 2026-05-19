@@ -26,7 +26,6 @@ class Game : public Node {
   Scene* currentScene_ = nullptr;
 
   std::unique_ptr<Renderer> renderer_ = std::make_unique<Renderer>();
-  bool isRunning_ = true;
 };
 
 }  // namespace luanaut

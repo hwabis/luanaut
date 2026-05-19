@@ -33,7 +33,7 @@ auto Game::Update() -> void {
 
 auto Game::HandleEvent(const SDL_Event& event) -> bool {
   if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-    isRunning_ = false;
+    Destroy();
     return true;
   }
 

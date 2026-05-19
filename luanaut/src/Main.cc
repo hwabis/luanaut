@@ -9,7 +9,9 @@
 
 class MyAwesomeScene : public luanaut::Scene {
  public:
-  MyAwesomeScene() { AddChild(std::make_unique<luanaut::MeshNode>()); }
+  auto Load() -> void override {
+    AddChild(std::make_unique<luanaut::MeshNode>());
+  }
 };
 
 class MyAwesomeGame : public luanaut::Game {
