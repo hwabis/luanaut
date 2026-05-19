@@ -1,13 +1,23 @@
-#include "ResourceManager.h"
+#include "GpuResourceManager.h"
 #include <array>
 #include <fstream>
 #include <stdexcept>
 
 namespace luanaut {
 
-auto ResourceManager::CreateMaterial(SDL_Window* window, SDL_GPUDevice* device)
+GpuResourceManager::GpuResourceManager(SDL_Window* window,
+                                       SDL_GPUDevice* device)
+    : window_(window), device_(device) {}
+
+auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     -> const Material* {
-  auto vertCode = readFile(std::string(SHADER_BIN_DIR) + "/triangle.vert.spv");
+  auto key = info.getKey();
+
+  if (cache_.contains(key)) {
+    return cache_[key].get();
+  }
+
+  auto vertCode = readFile(info.vertShaderPath);
   SDL_GPUShaderCreateInfo vertInfo = {
       .code_size = vertCode.size(),
       .code = vertCode.data(),
@@ -20,7 +30,7 @@ auto ResourceManager::CreateMaterial(SDL_Window* window, SDL_GPUDevice* device)
       .num_uniform_buffers = 0,
       .props = 0,
   };
-  SDL_GPUShader* vertShader = SDL_CreateGPUShader(device, &vertInfo);
+  SDL_GPUShader* vertShader = SDL_CreateGPUShader(device_, &vertInfo);
   if (vertShader == nullptr) {
     throw std::runtime_error(SDL_GetError());
   }
@@ -38,7 +48,7 @@ auto ResourceManager::CreateMaterial(SDL_Window* window, SDL_GPUDevice* device)
       .num_uniform_buffers = 0,
       .props = 0,
   };
-  SDL_GPUShader* fragShader = SDL_CreateGPUShader(device, &fragInfo);
+  SDL_GPUShader* fragShader = SDL_CreateGPUShader(device_, &fragInfo);
   if (fragShader == nullptr) {
     throw std::runtime_error(SDL_GetError());
   }
@@ -70,7 +80,7 @@ auto ResourceManager::CreateMaterial(SDL_Window* window, SDL_GPUDevice* device)
   SDL_GPUDepthStencilState depthStencilState = {};
 
   SDL_GPUColorTargetDescription colorTargetDesc{
-      .format = SDL_GetGPUSwapchainTextureFormat(device, window),
+      .format = SDL_GetGPUSwapchainTextureFormat(device_, window_),
       .blend_state = {},
   };
 
@@ -91,22 +101,22 @@ auto ResourceManager::CreateMaterial(SDL_Window* window, SDL_GPUDevice* device)
       .props = 0,
   };
 
-  auto* pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+  auto* pipeline = SDL_CreateGPUGraphicsPipeline(device_, &pipelineInfo);
   if (pipeline == nullptr) {
     throw std::runtime_error(SDL_GetError());
   }
 
-  materials_.push_back(std::make_unique<Material>(Material{
-      .pipeline = {device, pipeline},
-  }));
+  cache_[key] = std::make_unique<Material>(Material{
+      .pipeline = {device_, pipeline},
+  });
 
-  SDL_ReleaseGPUShader(device, vertShader);
-  SDL_ReleaseGPUShader(device, fragShader);
+  SDL_ReleaseGPUShader(device_, vertShader);
+  SDL_ReleaseGPUShader(device_, fragShader);
 
-  return materials_.back().get();
+  return cache_[key].get();
 }
 
-auto ResourceManager::readFile(const std::string& fileName)
+auto GpuResourceManager::readFile(const std::string& fileName)
     -> std::vector<uint8_t> {
   std::ifstream file(fileName, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {

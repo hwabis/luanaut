@@ -1,13 +1,14 @@
 #include "Game.h"
 #include <SDL3/SDL_gpu.h>
 #include "DependencyContainer.h"
-#include "ResourceManager.h"
+#include "GpuResourceManager.h"
 
 namespace luanaut {
 
 Game::Game() {
   deps_ = std::make_unique<DependencyContainer>();
-  deps_->Cache(std::make_shared<ResourceManager>());
+  deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
+                                                    renderer_->GetDevice()));
 }
 
 auto Game::IsRunning() const -> bool {

@@ -10,7 +10,7 @@ add_executable(luanaut
   src/Main.cc
   src/Node.cc
   src/Renderer.cc
-  src/ResourceManager.cc
+  src/GpuResourceManager.cc
 )
 
 set_target_defaults(luanaut)

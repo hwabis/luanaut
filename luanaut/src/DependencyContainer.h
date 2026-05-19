@@ -10,7 +10,7 @@ class DependencyContainer {
   DependencyContainer* parent = nullptr;
 
   template <typename T>
-  void Cache(std::shared_ptr<T> dep) {
+  auto Cache(std::shared_ptr<T> dep) -> void {
     deps_[typeid(T)] = std::move(dep);
   }
 

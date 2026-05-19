@@ -70,4 +70,12 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
   SDL_SubmitGPUCommandBuffer(cmdBuf);
 }
 
+auto Renderer::GetDevice() const -> SDL_GPUDevice* {
+  return device_;
+}
+
+auto Renderer::GetWindow() const -> SDL_Window* {
+  return window_;
+}
+
 }  // namespace luanaut

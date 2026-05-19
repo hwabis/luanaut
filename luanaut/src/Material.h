@@ -6,6 +6,7 @@ namespace luanaut {
 struct Material {
   SdlGpuGraphicsPipelineHandle pipeline;
   // todo there should be more... stuff here
+  // like textures?
 };
 
 }  // namespace luanaut
