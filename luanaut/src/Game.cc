@@ -12,7 +12,7 @@ Game::Game() {
 }
 
 Game::~Game() {
-  deps_.reset();
+  deps_.reset();  // Destroy before ~renderer_
 }
 
 auto Game::IsRunning() const -> bool {
