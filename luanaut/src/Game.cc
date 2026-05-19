@@ -11,6 +11,10 @@ Game::Game() {
                                                     renderer_->GetDevice()));
 }
 
+Game::~Game() {
+  deps_.reset();
+}
+
 auto Game::IsRunning() const -> bool {
   return isRunning_;
 }

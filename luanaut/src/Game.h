@@ -10,6 +10,8 @@ namespace luanaut {
 class Game : public Node {
  public:
   Game();
+  ~Game() override;
+
   [[nodiscard]] auto IsRunning() const -> bool;
 
   // todo we need some sort of scene system
