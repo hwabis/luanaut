@@ -5,18 +5,24 @@
 
 namespace luanaut {
 
-Game::Game() {
+Game::Game(std::unique_ptr<Scene> initialScene) {
   deps_ = std::make_unique<DependencyContainer>();
   deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
                                                     renderer_->GetDevice()));
+
+  SwitchScene(std::move(initialScene));
 }
 
 Game::~Game() {
   deps_.reset();  // Destroy before ~renderer_
 }
 
-auto Game::IsRunning() const -> bool {
-  return isRunning_;
+auto Game::SwitchScene(std::unique_ptr<Scene> newScene) -> void {
+  if (currentScene_ != nullptr) {
+    currentScene_->Destroy();
+  }
+  currentScene_ = newScene.get();
+  AddChild(std::move(newScene));
 }
 
 auto Game::Update() -> void {

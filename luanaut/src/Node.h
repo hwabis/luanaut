@@ -34,6 +34,8 @@ class Node {
       -> const std::vector<std::unique_ptr<Node>>&;
   auto AddChild(std::unique_ptr<Node> node) -> void;
 
+  [[nodiscard]] auto IsAlive() const -> bool;
+
  protected:
   virtual auto Load() -> void;
 

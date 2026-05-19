@@ -7,9 +7,14 @@
 // todo all these SDL_ init methods needs to be abstracted out of the app lol
 // maybe some weird macro thing
 
+class MyAwesomeScene : public luanaut::Scene {
+ public:
+  MyAwesomeScene() { AddChild(std::make_unique<luanaut::MeshNode>()); }
+};
+
 class MyAwesomeGame : public luanaut::Game {
  public:
-  MyAwesomeGame() { AddChild(std::make_unique<luanaut::MeshNode>()); }
+  MyAwesomeGame() : Game(std::make_unique<MyAwesomeScene>()) {}
 };
 
 auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
@@ -28,7 +33,7 @@ auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
 auto SDL_AppIterate(void* appState) -> SDL_AppResult {
   auto* game = static_cast<luanaut::Game*>(appState);
 
-  if (!game->IsRunning()) {
+  if (!game->IsAlive()) {
     return SDL_APP_SUCCESS;
   }
 

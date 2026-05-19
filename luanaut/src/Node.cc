@@ -61,6 +61,10 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   children_.push_back(std::move(node));
 }
 
+auto Node::IsAlive() const -> bool {
+  return isAlive_;
+}
+
 auto Node::Load() -> void {}
 
 auto Node::Update() -> void {}
