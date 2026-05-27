@@ -13,11 +13,7 @@ class Game : public Node {
   Game(std::unique_ptr<Scene> initialScene);
   ~Game() override;
 
-  // We are the only node that requires a kickstart load
-  auto Init() -> void;
-
  protected:
-  auto Load() -> void override;
   auto Update() -> void override;
   auto HandleEvent(const SDL_Event& event) -> bool override;
 

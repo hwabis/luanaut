@@ -9,18 +9,6 @@ namespace luanaut {
 Game::Game(std::unique_ptr<Scene> initialScene)
     : renderer_(std::make_unique<Renderer>()),
       initialScene_(std::move(initialScene)) {
-  deps_ = std::make_unique<DependencyContainer>();
-}
-
-Game::~Game() {
-  deps_.reset();  // Destroy before ~renderer_
-}
-
-auto Game::Init() -> void {
-  Load();
-}
-
-auto Game::Load() -> void {
   deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
                                                     renderer_->GetDevice()));
 
@@ -30,6 +18,10 @@ auto Game::Load() -> void {
   // - shoudl addchild only accept unique ptr?
   deps_->Cache(std::shared_ptr<SceneManager>(sceneManager.get(), [](auto*) {}));
   AddChild(std::move(sceneManager));
+}
+
+Game::~Game() {
+  deps_.reset();  // Destroy before ~renderer_
 }
 
 auto Game::Update() -> void {

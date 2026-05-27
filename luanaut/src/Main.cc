@@ -27,7 +27,6 @@ auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
   }
 
   auto* game = new MyAwesomeGame();
-  game->Init();  // Not a smell 👍
   *appState = game;
 
   return SDL_APP_CONTINUE;
