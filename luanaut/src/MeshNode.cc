@@ -5,7 +5,7 @@
 namespace luanaut {
 
 auto MeshNode::Load() -> void {
-  auto resources = deps_->Resolve<GpuResourceManager>();
+  auto* resources = deps_->Resolve<GpuResourceManager>();
   // todo load mesh from file (pass path thru ctor or smth)
   std::vector<Vertex> vertices = {{
                                       .pos = {0, 0.5, 0},

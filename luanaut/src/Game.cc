@@ -1,22 +1,19 @@
 #include "Game.h"
 #include <SDL3/SDL_gpu.h>
 #include "DependencyContainer.h"
-#include "GpuResourceManager.h"
-#include "SceneManager.h"
 
 namespace luanaut {
 
 Game::Game(std::unique_ptr<Scene> initialScene)
     : renderer_(std::make_unique<Renderer>()),
-      initialScene_(std::move(initialScene)) {
-  deps_->Cache(std::make_shared<GpuResourceManager>(renderer_->GetWindow(),
-                                                    renderer_->GetDevice()));
+      gpuResourceManager_(
+          std::make_unique<GpuResourceManager>(renderer_->GetWindow(),
+                                               renderer_->GetDevice())) {
+  deps_->Cache(gpuResourceManager_.get());
 
-  auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene_));
-  // there's something really weird here. questions:
-  // - should cache only accept shared ptr?
-  // - shoudl addchild only accept unique ptr?
-  deps_->Cache(std::shared_ptr<SceneManager>(sceneManager.get(), [](auto*) {}));
+  auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene));
+  sceneManager_ = sceneManager.get();
+  deps_->Cache(sceneManager_);
   AddChild(std::move(sceneManager));
 }
 

@@ -2,9 +2,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
 #include <memory>
+#include "GpuResourceManager.h"
 #include "Node.h"
 #include "Renderer.h"
 #include "Scene.h"
+#include "SceneManager.h"
 
 namespace luanaut {
 
@@ -19,9 +21,8 @@ class Game : public Node {
 
  private:
   std::unique_ptr<Renderer> renderer_;
-
-  // Used as handoff from ctor to load
-  std::unique_ptr<Scene> initialScene_;
+  std::unique_ptr<GpuResourceManager> gpuResourceManager_;
+  SceneManager* sceneManager_;
 };
 
 }  // namespace luanaut
