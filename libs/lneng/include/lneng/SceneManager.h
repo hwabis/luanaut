@@ -11,14 +11,15 @@ class SceneManager : public Node {
 
  protected:
   auto Load() -> void override;
+  auto Update() -> void override;
 
  private:
   // Only allow 1 scene as sole child
   using Node::AddChild;
   Scene* currentScene_ = nullptr;
 
-  // Used as handoff from ctor to load
-  std::unique_ptr<Scene> initialScene_;
+  std::unique_ptr<Scene> initialScene_ = nullptr;
+  std::unique_ptr<Scene> pendingScene_ = nullptr;
 };
 
 }  // namespace lneng
