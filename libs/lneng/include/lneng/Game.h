@@ -15,6 +15,10 @@ class Game : public Node {
   Game(std::unique_ptr<Scene> initialScene);
   ~Game() override;
 
+  using Node::DrawSubTree;
+  using Node::HandleEventSubTree;
+  using Node::UpdateSubTree;
+
  protected:
   auto Update() -> void override;
   auto HandleEvent(const SDL_Event& event) -> bool override;

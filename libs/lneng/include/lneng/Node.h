@@ -20,25 +20,22 @@ class Node {
 
   Transform transform{};
 
-  auto Destroy() -> void;
   [[nodiscard]] auto GetParent() const -> Node*;
   [[nodiscard]] auto GetWorldTransform() const -> glm::mat4x4;
-
-  auto UpdateSubTree() -> void;
-  // Technically doesn't have to be public (only invoked by Update)?
-  // But maybe we multithread someday
-  auto DrawSubTree(std::vector<DrawInfo>& out) -> void;
-  auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
   [[nodiscard]] auto GetChildren() const
       -> const std::vector<std::unique_ptr<Node>>&;
   auto AddChild(std::unique_ptr<Node> node) -> void;
 
+  auto Destroy() -> void;
   [[nodiscard]] auto IsAlive() const -> bool;
 
  protected:
-  virtual auto Load() -> void;
+  auto UpdateSubTree() -> void;
+  auto DrawSubTree(std::vector<DrawInfo>& out) -> void;
+  auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
+  virtual auto Load() -> void;
   virtual auto Update() -> void;
   virtual auto Draw(std::vector<DrawInfo>& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;
