@@ -2,7 +2,7 @@
 #include "Node.h"
 #include "Scene.h"
 
-namespace luanaut {
+namespace lneng {
 
 class SceneManager : public Node {
  public:
@@ -21,4 +21,4 @@ class SceneManager : public Node {
   std::unique_ptr<Scene> initialScene_;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

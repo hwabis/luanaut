@@ -4,10 +4,8 @@ find_package(glm CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-add_executable(luanaut
-  # todo separate app/engine to different targets
+add_library(lneng
   src/Game.cc
-  src/Main.cc
   src/MeshNode.cc
   src/Node.cc
   src/Renderer.cc
@@ -15,14 +13,15 @@ add_executable(luanaut
   src/SceneManager.cc
 )
 
-set_target_defaults(luanaut)
+set_target_defaults(lneng)
 
-target_include_directories(luanaut PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
+target_include_directories(lneng
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(luanaut
-  PRIVATE
+target_link_libraries(lneng
+  PUBLIC
     glm::glm
     SDL3::SDL3
     spdlog::spdlog
@@ -68,8 +67,8 @@ foreach(SRC_PATH ${SHADER_SOURCES})
 endforeach()
 
 add_custom_target(compiled_shaders DEPENDS ${ALL_COMPILED_BINARIES})
-add_dependencies(luanaut compiled_shaders)
-target_compile_definitions(luanaut PRIVATE
+add_dependencies(lneng compiled_shaders)
+target_compile_definitions(lneng PRIVATE
     SHADER_BIN_DIR="${SHADER_BIN_DIR}"
 )
 

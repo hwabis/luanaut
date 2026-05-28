@@ -1,8 +1,8 @@
-#include "MeshNode.h"
-#include "GpuResourceManager.h"
-#include "Vertex.h"
+#include "lneng/MeshNode.h"
+#include "lneng/GpuResourceManager.h"
+#include "lneng/Vertex.h"
 
-namespace luanaut {
+namespace lneng {
 
 auto MeshNode::Load() -> void {
   auto* resources = deps_->Resolve<GpuResourceManager>();
@@ -36,4 +36,4 @@ auto MeshNode::Draw(std::vector<DrawInfo>& out) -> void {
   });
 }
 
-}  // namespace luanaut
+}  // namespace lneng

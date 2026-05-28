@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-namespace luanaut {
+namespace lneng {
 
 struct Transform {
   glm::vec3 position{0};
@@ -20,4 +20,4 @@ struct Transform {
   }
 };
 
-}  // namespace luanaut
+}  // namespace lneng

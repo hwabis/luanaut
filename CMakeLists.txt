@@ -5,4 +5,5 @@ project(
   LANGUAGES CXX
 )
 
-add_subdirectory(luanaut)
+add_subdirectory(app)
+add_subdirectory(libs)

@@ -1,2 +1,2 @@
-luanaut/assets/models/** filter=lfs diff=lfs merge=lfs -text
-luanaut/assets/textures/** filter=lfs diff=lfs merge=lfs -text
+libs/assets/models/** filter=lfs diff=lfs merge=lfs -text
+libs/assets/textures/** filter=lfs diff=lfs merge=lfs -text

@@ -4,7 +4,7 @@
 #include "Material.h"
 #include "Mesh.h"
 
-namespace luanaut {
+namespace lneng {
 
 struct DrawInfo {
   glm::mat4 worldTransform{1.0F};
@@ -13,4 +13,4 @@ struct DrawInfo {
   const Material* material = nullptr;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

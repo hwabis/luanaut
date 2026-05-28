@@ -2,7 +2,7 @@
 #include "DrawInfo.h"
 #include "SdlHandles.h"
 
-namespace luanaut {
+namespace lneng {
 
 class Renderer {
  public:
@@ -18,4 +18,4 @@ class Renderer {
   SdlGpuDeviceHandle device_;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

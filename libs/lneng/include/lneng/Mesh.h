@@ -1,7 +1,7 @@
 #pragma once
 #include "SdlHandles.h"
 
-namespace luanaut {
+namespace lneng {
 
 struct Mesh {
   SdlGpuBufferHandle vertexBuffer;
@@ -9,4 +9,4 @@ struct Mesh {
   uint32_t indexBufferCount{};
 };
 
-}  // namespace luanaut
+}  // namespace lneng

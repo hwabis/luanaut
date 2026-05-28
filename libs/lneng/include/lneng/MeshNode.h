@@ -1,7 +1,7 @@
 #pragma once
 #include "Node.h"
 
-namespace luanaut {
+namespace lneng {
 
 class MeshNode : public Node {
  protected:
@@ -13,4 +13,4 @@ class MeshNode : public Node {
   const Material* material_ = nullptr;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

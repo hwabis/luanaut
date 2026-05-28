@@ -1,6 +1,6 @@
-#include "Node.h"
+#include "lneng/Node.h"
 
-namespace luanaut {
+namespace lneng {
 
 auto Node::Destroy() -> void {
   isAlive_ = false;
@@ -75,4 +75,4 @@ auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
   return false;
 }
 
-}  // namespace luanaut
+}  // namespace lneng

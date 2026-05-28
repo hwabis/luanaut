@@ -8,7 +8,7 @@
 #include "Scene.h"
 #include "SceneManager.h"
 
-namespace luanaut {
+namespace lneng {
 
 class Game : public Node {
  public:
@@ -25,4 +25,4 @@ class Game : public Node {
   SceneManager* sceneManager_;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

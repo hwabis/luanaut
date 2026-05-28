@@ -1,9 +1,9 @@
-#include "GpuResourceManager.h"
+#include "lneng/GpuResourceManager.h"
 #include <array>
 #include <fstream>
 #include <stdexcept>
 
-namespace luanaut {
+namespace lneng {
 
 GpuResourceManager::GpuResourceManager(SDL_Window* window,
                                        SDL_GPUDevice* device)
@@ -175,4 +175,4 @@ auto GpuResourceManager::readFile(const std::string& fileName)
   return buffer;
 }
 
-}  // namespace luanaut
+}  // namespace lneng

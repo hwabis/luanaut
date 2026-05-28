@@ -1,11 +1,11 @@
-#include "Renderer.h"
+#include "lneng/Renderer.h"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
-namespace luanaut {
+namespace lneng {
 
 Renderer::Renderer()
-    : window_(SDL_CreateWindow("Luanaut", 0, 0, SDL_WINDOW_FULLSCREEN)),
+    : window_(SDL_CreateWindow("lneng", 0, 0, SDL_WINDOW_FULLSCREEN)),
       device_(SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr)) {
   if (window_ == nullptr) {
     throw std::runtime_error(SDL_GetError());
@@ -80,4 +80,4 @@ auto Renderer::GetWindow() const -> SDL_Window* {
   return window_;
 }
 
-}  // namespace luanaut
+}  // namespace lneng

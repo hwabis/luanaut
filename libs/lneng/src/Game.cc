@@ -1,8 +1,8 @@
-#include "Game.h"
+#include "lneng/Game.h"
 #include <SDL3/SDL_gpu.h>
-#include "DependencyContainer.h"
+#include "lneng/DependencyContainer.h"
 
-namespace luanaut {
+namespace lneng {
 
 Game::Game(std::unique_ptr<Scene> initialScene)
     : renderer_(std::make_unique<Renderer>()),
@@ -36,4 +36,4 @@ auto Game::HandleEvent(const SDL_Event& event) -> bool {
   return false;
 }
 
-}  // namespace luanaut
+}  // namespace lneng

@@ -1,7 +1,7 @@
 #pragma once
 #include "SdlHandles.h"
 
-namespace luanaut {
+namespace lneng {
 
 struct Material {
   SdlGpuGraphicsPipelineHandle pipeline;
@@ -9,4 +9,4 @@ struct Material {
   // like textures?
 };
 
-}  // namespace luanaut
+}  // namespace lneng

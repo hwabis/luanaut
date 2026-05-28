@@ -2,7 +2,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-namespace luanaut {
+namespace lneng {
 
 class DependencyContainer {
  public:
@@ -32,4 +32,4 @@ class DependencyContainer {
   std::unordered_map<std::type_index, void*> deps_;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

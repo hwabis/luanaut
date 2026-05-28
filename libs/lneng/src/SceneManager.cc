@@ -1,6 +1,6 @@
-#include "SceneManager.h"
+#include "lneng/SceneManager.h"
 
-namespace luanaut {
+namespace lneng {
 
 SceneManager::SceneManager(std::unique_ptr<Scene> initialScene)
     : initialScene_(std::move(initialScene)) {}
@@ -18,4 +18,4 @@ auto SceneManager::SwitchScene(std::unique_ptr<Scene> newScene) -> void {
   // todo handle scene transition effects and stuff
 }
 
-}  // namespace luanaut
+}  // namespace lneng

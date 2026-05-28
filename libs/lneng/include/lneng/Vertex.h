@@ -1,11 +1,11 @@
 #pragma once
 #include <glm/glm.hpp>
 
-namespace luanaut {
+namespace lneng {
 
 struct Vertex {
   glm::vec3 pos;
   glm::vec3 color;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

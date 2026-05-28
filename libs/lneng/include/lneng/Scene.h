@@ -1,11 +1,11 @@
 #pragma once
 #include "Node.h"
 
-namespace luanaut {
+namespace lneng {
 
 class Scene : public Node {
   // todo some OnEnter/OnExit transform shenanigans
   // invoke them in game
 };
 
-}  // namespace luanaut
+}  // namespace lneng

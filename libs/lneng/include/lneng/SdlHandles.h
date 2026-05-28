@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 
-namespace luanaut {
+namespace lneng {
 
 class SdlWindowHandle {
  public:
@@ -174,4 +174,4 @@ class SdlGpuGraphicsPipelineHandle {
   SDL_GPUGraphicsPipeline* pipeline_ = nullptr;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

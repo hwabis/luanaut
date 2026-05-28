@@ -6,7 +6,7 @@
 #include "DrawInfo.h"
 #include "Transform.h"
 
-namespace luanaut {
+namespace lneng {
 
 class Node {
  public:
@@ -53,4 +53,4 @@ class Node {
   bool isAlive_ = true;
 };
 
-}  // namespace luanaut
+}  // namespace lneng

@@ -7,7 +7,7 @@
 #include "Mesh.h"
 #include "Vertex.h"
 
-namespace luanaut {
+namespace lneng {
 
 class GpuResourceManager {
  public:
@@ -66,4 +66,4 @@ class GpuResourceManager {
   SDL_GPUDevice* device_;
 };
 
-}  // namespace luanaut
+}  // namespace lneng
