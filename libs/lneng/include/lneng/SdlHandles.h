@@ -80,98 +80,48 @@ class SdlGpuDeviceHandle {
   SDL_GPUDevice* device_ = nullptr;
 };
 
-class SdlGpuBufferHandle {
+template <typename T, auto ReleaseFunc>
+class SdlGpuHandle {
  public:
-  SdlGpuBufferHandle() = default;
-
-  SdlGpuBufferHandle(SDL_GPUDevice* device, SDL_GPUBuffer* buffer)
-      : device_(device), buffer_(buffer) {}
-
-  ~SdlGpuBufferHandle() {
-    if (buffer_ != nullptr) {
-      SDL_ReleaseGPUBuffer(device_, buffer_);
+  SdlGpuHandle() = default;
+  SdlGpuHandle(SDL_GPUDevice* device, T* handle)
+      : device_(device), handle_(handle) {}
+  ~SdlGpuHandle() {
+    if (handle_) {
+      ReleaseFunc(device_, handle_);
     }
   }
 
-  SdlGpuBufferHandle(const SdlGpuBufferHandle&) = delete;
-  auto operator=(const SdlGpuBufferHandle&) -> SdlGpuBufferHandle& = delete;
-
-  SdlGpuBufferHandle(SdlGpuBufferHandle&& other) noexcept
-      : device_(other.device_), buffer_(other.buffer_) {
+  SdlGpuHandle(const SdlGpuHandle&) = delete;
+  auto operator=(const SdlGpuHandle&) -> SdlGpuHandle& = delete;
+  SdlGpuHandle(SdlGpuHandle&& other) noexcept
+      : device_(other.device_), handle_(other.handle_) {
     other.device_ = nullptr;
-    other.buffer_ = nullptr;
+    other.handle_ = nullptr;
   }
-
-  auto operator=(SdlGpuBufferHandle&& other) noexcept -> SdlGpuBufferHandle& {
+  auto operator=(SdlGpuHandle&& other) noexcept -> SdlGpuHandle& {
     if (this != &other) {
-      if (buffer_ != nullptr) {
-        SDL_ReleaseGPUBuffer(device_, buffer_);
+      if (handle_) {
+        ReleaseFunc(device_, handle_);
       }
-
       device_ = other.device_;
-      buffer_ = other.buffer_;
-
+      handle_ = other.handle_;
       other.device_ = nullptr;
-      other.buffer_ = nullptr;
+      other.handle_ = nullptr;
     }
-
     return *this;
   }
 
-  operator SDL_GPUBuffer*() const { return buffer_; }
+  operator T*() const { return handle_; }
 
  private:
   SDL_GPUDevice* device_ = nullptr;
-  SDL_GPUBuffer* buffer_ = nullptr;
+  T* handle_ = nullptr;
 };
 
-class SdlGpuGraphicsPipelineHandle {
- public:
-  SdlGpuGraphicsPipelineHandle() = default;
-
-  SdlGpuGraphicsPipelineHandle(SDL_GPUDevice* device,
-                               SDL_GPUGraphicsPipeline* pipeline)
-      : device_(device), pipeline_(pipeline) {}
-
-  ~SdlGpuGraphicsPipelineHandle() {
-    if (pipeline_ != nullptr) {
-      SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
-    }
-  }
-
-  SdlGpuGraphicsPipelineHandle(const SdlGpuGraphicsPipelineHandle&) = delete;
-
-  auto operator=(const SdlGpuGraphicsPipelineHandle&)
-      -> SdlGpuGraphicsPipelineHandle& = delete;
-
-  SdlGpuGraphicsPipelineHandle(SdlGpuGraphicsPipelineHandle&& other) noexcept
-      : device_(other.device_), pipeline_(other.pipeline_) {
-    other.device_ = nullptr;
-    other.pipeline_ = nullptr;
-  }
-
-  auto operator=(SdlGpuGraphicsPipelineHandle&& other) noexcept
-      -> SdlGpuGraphicsPipelineHandle& {
-    if (this != &other) {
-      if (pipeline_ != nullptr) {
-        SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
-      }
-
-      device_ = other.device_;
-      pipeline_ = other.pipeline_;
-
-      other.device_ = nullptr;
-      other.pipeline_ = nullptr;
-    }
-
-    return *this;
-  }
-
-  operator SDL_GPUGraphicsPipeline*() const { return pipeline_; }
-
- private:
-  SDL_GPUDevice* device_ = nullptr;
-  SDL_GPUGraphicsPipeline* pipeline_ = nullptr;
-};
+using SdlGpuBufferHandle = SdlGpuHandle<SDL_GPUBuffer, SDL_ReleaseGPUBuffer>;
+using SdlGpuTextureHandle = SdlGpuHandle<SDL_GPUTexture, SDL_ReleaseGPUTexture>;
+using SdlGpuGraphicsPipelineHandle =
+    SdlGpuHandle<SDL_GPUGraphicsPipeline, SDL_ReleaseGPUGraphicsPipeline>;
 
 }  // namespace lneng

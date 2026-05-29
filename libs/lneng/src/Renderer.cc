@@ -4,8 +4,15 @@
 
 namespace lneng {
 
+// todo ?? windowed for now to test resizing
+constexpr int initialWidth = 800;
+constexpr int initialHeight = 600;
+
 Renderer::Renderer()
-    : window_(SDL_CreateWindow("lneng", 0, 0, SDL_WINDOW_FULLSCREEN)),
+    : window_(SDL_CreateWindow("lneng",
+                               initialWidth,
+                               initialHeight,
+                               SDL_WINDOW_RESIZABLE)),
       device_(SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr)) {
   if (window_ == nullptr) {
     throw std::runtime_error(SDL_GetError());
@@ -39,8 +46,37 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
   colorTarget.load_op = SDL_GPU_LOADOP_CLEAR;
   colorTarget.store_op = SDL_GPU_STOREOP_STORE;
 
+  bool windowSizeChanged = width != depthWidth_ || height != depthHeight_;
+
+  if (windowSizeChanged) {
+    SDL_GPUTextureCreateInfo textureCreate{
+        .type = SDL_GPU_TEXTURETYPE_2D,
+        .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+        .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+        .width = width,
+        .height = height,
+        .layer_count_or_depth = 1,
+        .num_levels = 1,
+        .sample_count = SDL_GPU_SAMPLECOUNT_1,
+        .props = 0,
+    };
+
+    depthTexture_ = {device_, SDL_CreateGPUTexture(device_, &textureCreate)};
+    depthWidth_ = width;
+    depthHeight_ = height;
+  }
+
+  SDL_GPUDepthStencilTargetInfo depthInfo{};
+  depthInfo.texture = depthTexture_;
+  depthInfo.clear_depth = 1;
+  depthInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+  depthInfo.store_op = SDL_GPU_STOREOP_DONT_CARE;
+  depthInfo.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+  depthInfo.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+  depthInfo.cycle = !windowSizeChanged;
+
   SDL_GPURenderPass* pass =
-      SDL_BeginGPURenderPass(cmdBuf, &colorTarget, 1, nullptr);
+      SDL_BeginGPURenderPass(cmdBuf, &colorTarget, 1, &depthInfo);
 
   SDL_GPUGraphicsPipeline* boundPipeline = nullptr;
 

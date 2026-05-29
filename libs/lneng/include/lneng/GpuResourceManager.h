@@ -13,16 +13,19 @@ class GpuResourceManager {
  public:
   GpuResourceManager(SDL_Window* window, SDL_GPUDevice* device);
 
-  auto CreateMesh(const std::vector<Vertex>& vertices,
-                  const std::vector<uint32_t>& indices) -> const Mesh*;
+  struct MeshInfo {
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    std::string cacheKey;
+  };
+
+  auto CreateMesh(const MeshInfo& info) -> const Mesh*;
 
   struct MaterialInfo {
     std::string vertShaderPath;
     std::string fragShaderPath;
+    std::string cacheKey;
     // todo texture paths etc
-    [[nodiscard]] auto getKey() const -> std::string {
-      return vertShaderPath + fragShaderPath;
-    }
   };
 
   auto CreateMaterial(const MaterialInfo& info) -> const Material*;
@@ -59,7 +62,7 @@ class GpuResourceManager {
     SDL_ReleaseGPUTransferBuffer(device_, transferBuf);
   }
 
-  std::vector<std::unique_ptr<Mesh>> meshes_;
+  std::unordered_map<std::string, std::unique_ptr<Mesh>> meshes_;
   std::unordered_map<std::string, std::unique_ptr<Material>> materials_;
 
   SDL_Window* window_;

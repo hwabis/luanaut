@@ -20,12 +20,17 @@ auto MeshNode::Load() -> void {
                                       .color = {0, 0, 1},
                                   }};
   std::vector<uint32_t> indices = {0, 1, 2};
-  mesh_ = resources->CreateMesh(vertices, indices);
+  mesh_ = resources->CreateMesh({
+      .vertices = std::move(vertices),
+      .indices = std::move(indices),
+      .cacheKey = "lolol",
+  });
 
   // todo same here
   material_ = resources->CreateMaterial({
       .vertShaderPath = std::string(SHADER_BIN_DIR) + "/triangle.vert.spv",
       .fragShaderPath = std::string(SHADER_BIN_DIR) + "/triangle.frag.spv",
+      .cacheKey = "lolol",
   });
 }
 

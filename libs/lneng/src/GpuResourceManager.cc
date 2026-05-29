@@ -9,42 +9,40 @@ GpuResourceManager::GpuResourceManager(SDL_Window* window,
                                        SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
-auto GpuResourceManager::CreateMesh(const std::vector<Vertex>& vertices,
-                                    const std::vector<uint32_t>& indices)
-    -> const Mesh* {
+auto GpuResourceManager::CreateMesh(const MeshInfo& info) -> const Mesh* {
+  if (auto itr = meshes_.find(info.cacheKey); itr != meshes_.end()) {
+    return itr->second.get();
+  }
+
   SDL_GPUBufferCreateInfo vboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = static_cast<Uint32>(vertices.size() * sizeof(Vertex)),
+      .size = static_cast<Uint32>(info.vertices.size() * sizeof(Vertex)),
       .props = 0,
   };
   SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
-  uploadToBuffer(vbo, vertices);
+  uploadToBuffer(vbo, info.vertices);
 
   SDL_GPUBufferCreateInfo iboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size = static_cast<Uint32>(indices.size() * sizeof(uint32_t)),
+      .size = static_cast<Uint32>(info.indices.size() * sizeof(uint32_t)),
       .props = 0,
   };
   SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
-  uploadToBuffer(ibo, indices);
+  uploadToBuffer(ibo, info.indices);
 
-  // todo i have no idea how to uniquely key the input.. eventually this should
-  // be a set to cache duplicates
-  meshes_.push_back(std::make_unique<Mesh>(Mesh{
+  meshes_[info.cacheKey] = std::make_unique<Mesh>(Mesh{
       .vertexBuffer = {device_, vbo},
       .indexBuffer = {device_, ibo},
-      .indexBufferCount = static_cast<Uint32>(indices.size()),
-  }));
+      .indexBufferCount = static_cast<Uint32>(info.indices.size()),
+  });
 
-  return meshes_.back().get();
+  return meshes_[info.cacheKey].get();
 }
 
 auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     -> const Material* {
-  auto key = info.getKey();
-
-  if (materials_.contains(key)) {
-    return materials_[key].get();
+  if (auto itr = materials_.find(info.cacheKey); itr != materials_.end()) {
+    return itr->second.get();
   }
 
   auto vertCode = readFile(info.vertShaderPath);
@@ -121,6 +119,9 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
   multisampleState.sample_count = SDL_GPU_SAMPLECOUNT_1;
 
   SDL_GPUDepthStencilState depthStencilState = {};
+  depthStencilState.compare_op = SDL_GPU_COMPAREOP_LESS;
+  depthStencilState.enable_depth_test = true;
+  depthStencilState.enable_depth_write = true;
 
   SDL_GPUColorTargetDescription colorTargetDesc{
       .format = SDL_GetGPUSwapchainTextureFormat(device_, window_),
@@ -130,7 +131,8 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
   SDL_GPUGraphicsPipelineTargetInfo targetInfo = {};
   targetInfo.color_target_descriptions = &colorTargetDesc;
   targetInfo.num_color_targets = 1;
-  targetInfo.has_depth_stencil_target = false;
+  targetInfo.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+  targetInfo.has_depth_stencil_target = true;
 
   SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{
       .vertex_shader = vertShader,
@@ -149,14 +151,14 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
     throw std::runtime_error(SDL_GetError());
   }
 
-  materials_[key] = std::make_unique<Material>(Material{
+  materials_[info.cacheKey] = std::make_unique<Material>(Material{
       .pipeline = {device_, pipeline},
   });
 
   SDL_ReleaseGPUShader(device_, vertShader);
   SDL_ReleaseGPUShader(device_, fragShader);
 
-  return materials_[key].get();
+  return materials_[info.cacheKey].get();
 }
 
 auto GpuResourceManager::readFile(const std::string& fileName)
