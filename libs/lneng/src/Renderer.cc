@@ -1,5 +1,4 @@
 #include "lneng/Renderer.h"
-#include <spdlog/spdlog.h>
 #include <stdexcept>
 
 namespace lneng {
@@ -26,7 +25,6 @@ Renderer::Renderer()
 }
 
 auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
-  spdlog::debug("draws: {}", draws.size());
   SDL_GPUCommandBuffer* cmdBuf = SDL_AcquireGPUCommandBuffer(device_);
   if (cmdBuf == nullptr) {
     throw std::runtime_error(SDL_GetError());

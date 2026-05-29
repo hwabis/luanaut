@@ -2,7 +2,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/set_target_defaults.cmake)
 
 find_package(glm CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
 
 add_library(lneng
   src/Game.cc
@@ -24,7 +23,6 @@ target_link_libraries(lneng
   PUBLIC
     glm::glm
     SDL3::SDL3
-    spdlog::spdlog
 )
 
 find_program(DXC_EXECUTABLE dxc REQUIRED)

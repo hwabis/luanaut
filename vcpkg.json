@@ -6,7 +6,6 @@
     "gtest",
     { "name": "sdl3", "features": ["vulkan"] },
     "sol2",
-    "spdlog",
     "tinygltf"
   ]
 }
