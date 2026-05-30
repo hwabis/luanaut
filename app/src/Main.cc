@@ -1,3 +1,4 @@
+#include <lneng/AssetLoader.h>
 #include <lneng/Game.h>
 #include <lneng/MeshNode.h>
 
@@ -9,7 +10,12 @@ class MyAwesomeGame : public lneng::Game {
   class MyAwesomeScene : public lneng::Scene {
    public:
     auto Load() -> void override {
-      AddChild(std::make_unique<lneng::MeshNode>());
+      auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
+      std::filesystem::path duckPath =
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
+      auto duck = assetLoader->LoadGlb(duckPath);
+
+      AddChild(std::make_unique<lneng::MeshNode>(duck));
     }
   };
 };

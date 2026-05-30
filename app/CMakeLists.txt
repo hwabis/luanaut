@@ -13,4 +13,10 @@ target_link_libraries(luanaut
     lneng
 )
 
-# todo the asset stuff should be here as well for user-defined models etc
+set(APP_ASSETS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+set(APP_ASSETS_BIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets")
+target_compile_definitions(luanaut PRIVATE
+    APP_ASSETS_BIN_DIR="${APP_ASSETS_BIN_DIR}"
+)
+
+file(COPY "${APP_ASSETS_SRC_DIR}/models" DESTINATION "${APP_ASSETS_BIN_DIR}")

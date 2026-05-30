@@ -6,10 +6,12 @@ namespace lneng {
 
 Game::Game(std::unique_ptr<Scene> initialScene)
     : renderer_(std::make_unique<Renderer>()),
-      gpuResourceManager_(
-          std::make_unique<GpuResourceManager>(renderer_->GetWindow(),
-                                               renderer_->GetDevice())) {
-  deps_->Cache(gpuResourceManager_.get());
+      assetLoader_(std::make_unique<AssetLoader>()),
+      gpuResourceLoader_(
+          std::make_unique<GpuResourceLoader>(renderer_->GetWindow(),
+                                              renderer_->GetDevice())) {
+  deps_->Cache(assetLoader_.get());
+  deps_->Cache(gpuResourceLoader_.get());
 
   auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene));
   sceneManager_ = sceneManager.get();

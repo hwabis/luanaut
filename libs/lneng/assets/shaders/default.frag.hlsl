@@ -5,6 +5,7 @@ struct VSOutput {
   float3 color : TEXCOORD2;
 };
 
+// todo actual lighting with ubo
 float4 fragMain(VSOutput input) : SV_Target {
-  return float4(input.color, 1);
+  return float4(input.normal * 0.5 + 0.5, 1);
 }

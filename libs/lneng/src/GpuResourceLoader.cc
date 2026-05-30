@@ -1,15 +1,14 @@
-#include "lneng/GpuResourceManager.h"
 #include <array>
 #include <fstream>
 #include <stdexcept>
+#include "lneng/GpuResourceLoader.h"
 
 namespace lneng {
 
-GpuResourceManager::GpuResourceManager(SDL_Window* window,
-                                       SDL_GPUDevice* device)
+GpuResourceLoader::GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
-auto GpuResourceManager::CreateMesh(const MeshInfo& info) -> const Mesh* {
+auto GpuResourceLoader::CreateMesh(const MeshInfo& info) -> const Mesh* {
   if (auto itr = meshes_.find(info.cacheKey); itr != meshes_.end()) {
     return itr->second.get();
   }
@@ -39,7 +38,7 @@ auto GpuResourceManager::CreateMesh(const MeshInfo& info) -> const Mesh* {
   return meshes_[info.cacheKey].get();
 }
 
-auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
+auto GpuResourceLoader::CreateMaterial(const MaterialInfo& info)
     -> const Material* {
   if (auto itr = materials_.find(info.cacheKey); itr != materials_.end()) {
     return itr->second.get();
@@ -148,11 +147,11 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
   return materials_[info.cacheKey].get();
 }
 
-auto GpuResourceManager::readFile(const std::string& fileName)
+auto GpuResourceLoader::readFile(const std::filesystem::path& path)
     -> std::vector<uint8_t> {
-  std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+  std::ifstream file(path, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
-    throw std::runtime_error("failed to open file: " + fileName);
+    throw std::runtime_error("failed to open file: " + path.string());
   }
 
   const size_t fileSize = static_cast<size_t>(file.tellg());

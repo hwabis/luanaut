@@ -2,7 +2,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
 #include <memory>
-#include "GpuResourceManager.h"
+#include "AssetLoader.h"
+#include "GpuResourceLoader.h"
 #include "Node.h"
 #include "Renderer.h"
 #include "Scene.h"
@@ -25,7 +26,8 @@ class Game : public Node {
 
  private:
   std::unique_ptr<Renderer> renderer_;
-  std::unique_ptr<GpuResourceManager> gpuResourceManager_;
+  std::unique_ptr<AssetLoader> assetLoader_;
+  std::unique_ptr<GpuResourceLoader> gpuResourceLoader_;
   SceneManager* sceneManager_;
 };
 

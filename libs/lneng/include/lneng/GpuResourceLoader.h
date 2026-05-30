@@ -1,37 +1,26 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include "Material.h"
+#include "MaterialInfo.h"
 #include "Mesh.h"
-#include "Vertex.h"
+#include "MeshInfo.h"
 
 namespace lneng {
 
-class GpuResourceManager {
+class GpuResourceLoader {
  public:
-  GpuResourceManager(SDL_Window* window, SDL_GPUDevice* device);
-
-  struct MeshInfo {
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    std::string cacheKey;
-  };
+  GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device);
 
   auto CreateMesh(const MeshInfo& info) -> const Mesh*;
-
-  struct MaterialInfo {
-    std::string vertShaderPath;
-    std::string fragShaderPath;
-    std::string cacheKey;
-    // todo texture paths etc
-  };
-
   auto CreateMaterial(const MaterialInfo& info) -> const Material*;
 
  private:
-  static auto readFile(const std::string& fileName) -> std::vector<uint8_t>;
+  static auto readFile(const std::filesystem::path& path)
+      -> std::vector<uint8_t>;
   template <typename T>
   auto uploadToBuffer(SDL_GPUBuffer* target, const std::vector<T>& data)
       -> void {

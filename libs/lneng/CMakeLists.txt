@@ -1,14 +1,16 @@
 include(${CMAKE_SOURCE_DIR}/cmake/set_target_defaults.cmake)
 
+find_package(fastgltf CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 
 add_library(lneng
+  src/AssetLoader.cc
   src/Game.cc
   src/MeshNode.cc
   src/Node.cc
   src/Renderer.cc
-  src/GpuResourceManager.cc
+  src/GpuResourceLoader.cc
   src/SceneManager.cc
 )
 
@@ -21,13 +23,20 @@ target_include_directories(lneng
 
 target_link_libraries(lneng
   PUBLIC
+    fastgltf::fastgltf
     glm::glm
     SDL3::SDL3
 )
 
+set(LNENG_ASSETS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+set(LNENG_ASSETS_BIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets")
+target_compile_definitions(lneng PRIVATE
+    LNENG_ASSETS_BIN_DIR="${LNENG_ASSETS_BIN_DIR}"
+)
+
 find_program(DXC_EXECUTABLE dxc REQUIRED)
-set(SHADER_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders")
-set(SHADER_BIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets/shaders")
+set(SHADER_SRC_DIR "${LNENG_ASSETS_SRC_DIR}/shaders")
+set(SHADER_BIN_DIR "${LNENG_ASSETS_BIN_DIR}/shaders")
 file(GLOB_RECURSE SHADER_SOURCES "${SHADER_SRC_DIR}/*.hlsl")
 set(ALL_COMPILED_BINARIES "")
 
@@ -66,8 +75,5 @@ endforeach()
 
 add_custom_target(compiled_shaders DEPENDS ${ALL_COMPILED_BINARIES})
 add_dependencies(lneng compiled_shaders)
-target_compile_definitions(lneng PRIVATE
-    SHADER_BIN_DIR="${SHADER_BIN_DIR}"
-)
 
-# todo same thing for models and textures lol
+file(COPY "${LNENG_ASSETS_SRC_DIR}/models" DESTINATION "${LNENG_ASSETS_BIN_DIR}")

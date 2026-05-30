@@ -5,8 +5,9 @@ namespace lneng {
 
 struct Material {
   SdlGpuGraphicsPipelineHandle pipeline;
-  // todo there should be more... stuff here
-  // like textures?
+  // todo
+  // SDL_GPUTexture
+  // SDL_GPUSampler
 };
 
 }  // namespace lneng

@@ -2,10 +2,10 @@
   "name": "luanaut",
   "version-string": "1.0.0",
   "dependencies": [
+    "fastgltf",
     "glm",
     "gtest",
     { "name": "sdl3", "features": ["vulkan"] },
-    "sol2",
-    "tinygltf"
+    "sol2"
   ]
 }
