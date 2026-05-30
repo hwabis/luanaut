@@ -76,6 +76,16 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
   SDL_GPURenderPass* pass =
       SDL_BeginGPURenderPass(cmdBuf, &colorTarget, 1, &depthInfo);
 
+  SDL_GPUViewport viewport{
+      .x = 0,
+      .y = 0,
+      .w = static_cast<float>(width),
+      .h = static_cast<float>(height),
+      .min_depth = 0,
+      .max_depth = 1,
+  };
+  SDL_SetGPUViewport(pass, &viewport);
+
   SDL_GPUGraphicsPipeline* boundPipeline = nullptr;
 
   for (const auto& info : draws) {
@@ -83,16 +93,6 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
       SDL_BindGPUGraphicsPipeline(pass, info.material->pipeline);
       boundPipeline = info.material->pipeline;
     }
-
-    SDL_GPUViewport viewport{
-        .x = 0,
-        .y = 0,
-        .w = static_cast<float>(width),
-        .h = static_cast<float>(height),
-        .min_depth = 0,
-        .max_depth = 1,
-    };
-    SDL_SetGPUViewport(pass, &viewport);
 
     SDL_GPUBufferBinding vboBind{.buffer = info.mesh->vertexBuffer,
                                  .offset = 0};
