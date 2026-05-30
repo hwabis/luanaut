@@ -55,7 +55,7 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
       .num_samplers = 0,
       .num_storage_textures = 0,
       .num_storage_buffers = 0,
-      .num_uniform_buffers = 0,
+      .num_uniform_buffers = 1,
       .props = 0,
   };
   SDL_GPUShader* vertShader = SDL_CreateGPUShader(device_, &vertInfo);
@@ -88,26 +88,13 @@ auto GpuResourceManager::CreateMaterial(const MaterialInfo& info)
       .instance_step_rate = 0,
   };
 
-  std::array<SDL_GPUVertexAttribute, 2> vertAttributes = {
-      SDL_GPUVertexAttribute{
-          .location = 0,
-          .buffer_slot = 0,
-          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-          .offset = offsetof(Vertex, pos),
-      },
-      SDL_GPUVertexAttribute{
-          .location = 1,
-          .buffer_slot = 0,
-          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-          .offset = offsetof(Vertex, color),
-      },
-  };
+  auto vertAttributes = Vertex::GetAttributes();
 
   SDL_GPUVertexInputState vertInputState = {
       .vertex_buffer_descriptions = &vertDesc,
       .num_vertex_buffers = 1,
       .vertex_attributes = vertAttributes.data(),
-      .num_vertex_attributes = 2,
+      .num_vertex_attributes = vertAttributes.size(),
   };
 
   SDL_GPURasterizerState rasterizerState = {};

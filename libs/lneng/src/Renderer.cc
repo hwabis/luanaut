@@ -1,4 +1,5 @@
 #include "lneng/Renderer.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
 
 namespace lneng {
@@ -94,11 +95,25 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
       boundPipeline = info.material->pipeline;
     }
 
+    // todo camera node
+    glm::mat4 view =
+        glm::lookAtLH(glm::vec3(1.5, 1.5, -2),  // offset up and to the side
+                      glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+    // todo this needs to be recreated on window size change
+    glm::mat4 proj = glm::perspectiveLH_ZO(
+        glm::radians(60.0F),
+        static_cast<float>(width) / static_cast<float>(height), 0.1F, 100.0F);
+    glm::mat4 mvp = proj * view * info.worldTransform;
+    // todo feels like uploading smth random, is there a way to know without
+    // manually checking triangle.vert.hlsl?
+    SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
+
     SDL_GPUBufferBinding vboBind{.buffer = info.mesh->vertexBuffer,
                                  .offset = 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vboBind, 1);
     SDL_GPUBufferBinding iboBind{.buffer = info.mesh->indexBuffer, .offset = 0};
     SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
     SDL_DrawGPUIndexedPrimitives(pass, info.mesh->indexBufferCount, 1, 0, 0, 0);
   }
 
