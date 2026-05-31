@@ -7,7 +7,7 @@ find_package(SDL3 CONFIG REQUIRED)
 add_library(lneng
   src/AssetLoader.cc
   src/Game.cc
-  src/MeshNode.cc
+  src/ModelNode.cc
   src/Node.cc
   src/Renderer.cc
   src/GpuResourceLoader.cc

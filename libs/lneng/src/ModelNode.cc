@@ -1,30 +1,29 @@
-#include "lneng/MeshNode.h"
+#include "lneng/ModelNode.h"
 #include "lneng/GpuResourceLoader.h"
 
 namespace lneng {
 
-MeshNode::MeshNode(GltfAsset asset) : asset_(std::move(asset)) {}
+ModelNode::ModelNode(ModelInfo asset) : asset_(std::move(asset)) {}
 
-auto MeshNode::Load() -> void {
+auto ModelNode::Load() -> void {
   // todo handle if asset has multiple meshes/materials
   // (vector<Mesh*> or something)
 
-  auto* resources = deps_->Resolve<GpuResourceLoader>();
-
-  mesh_ = resources->CreateMesh(asset_.meshes[0]);
-  material_ = resources->CreateMaterial({
+  auto* gpuLoader = deps_->Resolve<GpuResourceLoader>();
+  pipeline_ = gpuLoader->CreateGpuGraphicsPipeline({
       .vertShaderPath = std::filesystem::path(LNENG_ASSETS_BIN_DIR) /
                         "shaders" / "default.vert.spv",
       .fragShaderPath = std::filesystem::path(LNENG_ASSETS_BIN_DIR) /
                         "shaders" / "default.frag.spv",
-      .cacheKey = "default",
   });
+  mesh_ = gpuLoader->CreateMesh(asset_.meshes[0]);
 }
 
-auto MeshNode::Draw(std::vector<DrawInfo>& out) -> void {
+auto ModelNode::Draw(std::vector<DrawInfo>& out) -> void {
   out.push_back(DrawInfo{
+      .worldTransform = GetWorldTransform(),
+      .pipeline = pipeline_,
       .mesh = mesh_,
-      .material = material_,
   });
 }
 

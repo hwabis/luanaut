@@ -1,12 +1,12 @@
 #pragma once
 #include <filesystem>
-#include "GltfAsset.h"
+#include "ModelInfo.h"
 
 namespace lneng {
 
 class AssetLoader {
  public:
-  auto LoadGlb(const std::filesystem::path& path) -> GltfAsset;
+  auto LoadGlb(const std::filesystem::path& path) -> ModelInfo;
 };
 
 }  // namespace lneng

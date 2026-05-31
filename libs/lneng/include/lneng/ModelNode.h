@@ -1,22 +1,21 @@
 #pragma once
-#include "GltfAsset.h"
+#include "ModelInfo.h"
 #include "Node.h"
 
 namespace lneng {
 
-class MeshNode : public Node {
+class ModelNode : public Node {
  public:
-  MeshNode(GltfAsset asset);
+  ModelNode(ModelInfo asset);
 
  protected:
   auto Load() -> void override;
   auto Draw(std::vector<DrawInfo>& out) -> void override;
 
  private:
-  GltfAsset asset_;
-
-  const Mesh* mesh_ = nullptr;
-  const Material* material_ = nullptr;
+  ModelInfo asset_;
+  SdlGpuGraphicsPipelineHandle* pipeline_ = nullptr;
+  Mesh* mesh_ = nullptr;
 };
 
 }  // namespace lneng

@@ -4,10 +4,11 @@
 
 namespace lneng {
 
-struct GltfAsset {
+struct ModelInfo {
   std::vector<MeshInfo> meshes;
-  // todo add material stuff ???
-  // this is NOT MaterialInfo.h right?
+  // todo
+  // texture
+  // sampler
 };
 
 }  // namespace lneng

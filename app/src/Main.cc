@@ -1,6 +1,6 @@
 #include <lneng/AssetLoader.h>
 #include <lneng/Game.h>
-#include <lneng/MeshNode.h>
+#include <lneng/ModelNode.h>
 
 class MyAwesomeGame : public lneng::Game {
  public:
@@ -15,7 +15,7 @@ class MyAwesomeGame : public lneng::Game {
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
       auto duck = assetLoader->LoadGlb(duckPath);
 
-      AddChild(std::make_unique<lneng::MeshNode>(duck));
+      AddChild(std::make_unique<lneng::ModelNode>(duck));
     }
   };
 };

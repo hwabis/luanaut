@@ -1,16 +1,16 @@
 #pragma once
 #include <SDL3/SDL_gpu.h>
 #include <glm/glm.hpp>
-#include "Material.h"
 #include "Mesh.h"
+#include "lneng/SdlHandles.h"
 
 namespace lneng {
 
 struct DrawInfo {
   glm::mat4 worldTransform{1.0F};
-  // what does 2D need or not need?
-  const Mesh* mesh = nullptr;
-  const Material* material = nullptr;
+  SdlGpuGraphicsPipelineHandle* pipeline = nullptr;
+  Mesh* mesh = nullptr;
+  // todo how do we access texture? keep ModelInfo out of this right?
 };
 
 }  // namespace lneng

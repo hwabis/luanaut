@@ -4,10 +4,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "Material.h"
-#include "MaterialInfo.h"
+#include "GpuGraphicsPipelineInfo.h"
 #include "Mesh.h"
 #include "MeshInfo.h"
+#include "lneng/SdlHandles.h"
 
 namespace lneng {
 
@@ -15,8 +15,10 @@ class GpuResourceLoader {
  public:
   GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device);
 
-  auto CreateMesh(const MeshInfo& info) -> const Mesh*;
-  auto CreateMaterial(const MaterialInfo& info) -> const Material*;
+  auto CreateMesh(const MeshInfo& info) -> Mesh*;
+  // todo CreateTexture -> Texture struct or smth
+  auto CreateGpuGraphicsPipeline(const GpuGraphicsPipelineInfo& info)
+      -> SdlGpuGraphicsPipelineHandle*;
 
  private:
   static auto readFile(const std::filesystem::path& path)
@@ -52,7 +54,8 @@ class GpuResourceLoader {
   }
 
   std::unordered_map<std::string, std::unique_ptr<Mesh>> meshes_;
-  std::unordered_map<std::string, std::unique_ptr<Material>> materials_;
+  std::unordered_map<std::string, std::unique_ptr<SdlGpuGraphicsPipelineHandle>>
+      pipelines_;
 
   SDL_Window* window_;
   SDL_GPUDevice* device_;

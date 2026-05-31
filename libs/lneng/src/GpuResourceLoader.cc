@@ -1,14 +1,15 @@
+#include "lneng/GpuResourceLoader.h"
 #include <array>
 #include <fstream>
 #include <stdexcept>
-#include "lneng/GpuResourceLoader.h"
+#include "lneng/SdlHandles.h"
 
 namespace lneng {
 
 GpuResourceLoader::GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
-auto GpuResourceLoader::CreateMesh(const MeshInfo& info) -> const Mesh* {
+auto GpuResourceLoader::CreateMesh(const MeshInfo& info) -> Mesh* {
   if (auto itr = meshes_.find(info.cacheKey); itr != meshes_.end()) {
     return itr->second.get();
   }
@@ -38,9 +39,9 @@ auto GpuResourceLoader::CreateMesh(const MeshInfo& info) -> const Mesh* {
   return meshes_[info.cacheKey].get();
 }
 
-auto GpuResourceLoader::CreateMaterial(const MaterialInfo& info)
-    -> const Material* {
-  if (auto itr = materials_.find(info.cacheKey); itr != materials_.end()) {
+auto GpuResourceLoader::CreateGpuGraphicsPipeline(
+    const GpuGraphicsPipelineInfo& info) -> SdlGpuGraphicsPipelineHandle* {
+  if (auto itr = pipelines_.find(info.GetHashKey()); itr != pipelines_.end()) {
     return itr->second.get();
   }
 
@@ -137,14 +138,13 @@ auto GpuResourceLoader::CreateMaterial(const MaterialInfo& info)
     throw std::runtime_error(SDL_GetError());
   }
 
-  materials_[info.cacheKey] = std::make_unique<Material>(Material{
-      .pipeline = {device_, pipeline},
-  });
+  pipelines_[info.GetHashKey()] =
+      std::make_unique<SdlGpuGraphicsPipelineHandle>(device_, pipeline);
 
   SDL_ReleaseGPUShader(device_, vertShader);
   SDL_ReleaseGPUShader(device_, fragShader);
 
-  return materials_[info.cacheKey].get();
+  return pipelines_[info.GetHashKey()].get();
 }
 
 auto GpuResourceLoader::readFile(const std::filesystem::path& path)

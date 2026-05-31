@@ -1,6 +1,8 @@
 #include "lneng/Renderer.h"
+#include <SDL3/SDL_gpu.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
+#include "lneng/SdlHandles.h"
 
 namespace lneng {
 
@@ -87,12 +89,12 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
   };
   SDL_SetGPUViewport(pass, &viewport);
 
-  SDL_GPUGraphicsPipeline* boundPipeline = nullptr;
+  SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
 
   for (const auto& info : draws) {
-    if (info.material->pipeline != boundPipeline) {
-      SDL_BindGPUGraphicsPipeline(pass, info.material->pipeline);
-      boundPipeline = info.material->pipeline;
+    if (info.pipeline != boundPipeline) {
+      SDL_BindGPUGraphicsPipeline(pass, *info.pipeline);
+      boundPipeline = info.pipeline;
     }
 
     // todo camera node
