@@ -1,21 +1,21 @@
 #pragma once
-#include "ModelInfo.h"
+#include "Model.h"
 #include "Node.h"
 
 namespace lneng {
 
 class ModelNode : public Node {
  public:
-  ModelNode(ModelInfo asset);
+  ModelNode(Model::Creation modelInfo);
 
  protected:
   auto Load() -> void override;
   auto Draw(std::vector<DrawInfo>& out) -> void override;
 
  private:
-  ModelInfo asset_;
+  Model::Creation modelInfo_;
   SdlGpuGraphicsPipelineHandle* pipeline_ = nullptr;
-  Mesh* mesh_ = nullptr;
+  Model* model_ = nullptr;
 };
 
 }  // namespace lneng

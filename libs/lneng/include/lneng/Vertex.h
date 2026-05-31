@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL3/SDL_gpu.h>
-#include <array>
 #include <glm/glm.hpp>
+#include <vector>
 
 namespace lneng {
 
@@ -12,7 +12,7 @@ struct Vertex {
   glm::vec2 uv{};
   glm::vec3 color{};
 
-  static auto GetAttributes() -> std::array<SDL_GPUVertexAttribute, 4> {
+  static auto GetAttributes() -> std::vector<SDL_GPUVertexAttribute> {
     return {
         SDL_GPUVertexAttribute{
             .location = 0,

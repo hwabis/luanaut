@@ -1,5 +1,4 @@
 #include "lneng/GpuResourceLoader.h"
-#include <array>
 #include <fstream>
 #include <stdexcept>
 #include "lneng/SdlHandles.h"
@@ -8,36 +7,6 @@ namespace lneng {
 
 GpuResourceLoader::GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device)
     : window_(window), device_(device) {}
-
-auto GpuResourceLoader::CreateMesh(const MeshInfo& info) -> Mesh* {
-  if (auto itr = meshes_.find(info.cacheKey); itr != meshes_.end()) {
-    return itr->second.get();
-  }
-
-  SDL_GPUBufferCreateInfo vboInfo = {
-      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = static_cast<Uint32>(info.vertices.size() * sizeof(Vertex)),
-      .props = 0,
-  };
-  SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
-  uploadToBuffer(vbo, info.vertices);
-
-  SDL_GPUBufferCreateInfo iboInfo = {
-      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size = static_cast<Uint32>(info.indices.size() * sizeof(uint32_t)),
-      .props = 0,
-  };
-  SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
-  uploadToBuffer(ibo, info.indices);
-
-  meshes_[info.cacheKey] = std::make_unique<Mesh>(Mesh{
-      .vertexBuffer = {device_, vbo},
-      .indexBuffer = {device_, ibo},
-      .indexBufferCount = static_cast<Uint32>(info.indices.size()),
-  });
-
-  return meshes_[info.cacheKey].get();
-}
 
 auto GpuResourceLoader::CreateGpuGraphicsPipeline(
     const GpuGraphicsPipelineInfo& info) -> SdlGpuGraphicsPipelineHandle* {
@@ -88,13 +57,12 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
       .instance_step_rate = 0,
   };
 
-  auto vertAttributes = Vertex::GetAttributes();
-
   SDL_GPUVertexInputState vertInputState = {
       .vertex_buffer_descriptions = &vertDesc,
       .num_vertex_buffers = 1,
-      .vertex_attributes = vertAttributes.data(),
-      .num_vertex_attributes = vertAttributes.size(),
+      .vertex_attributes = info.vertShaderAttributes.data(),
+      .num_vertex_attributes =
+          static_cast<Uint32>(info.vertShaderAttributes.size()),
   };
 
   SDL_GPURasterizerState rasterizerState = {};
@@ -145,6 +113,52 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
   SDL_ReleaseGPUShader(device_, fragShader);
 
   return pipelines_[info.GetHashKey()].get();
+}
+
+auto GpuResourceLoader::CreateModel(const Model::Creation& info) -> Model* {
+  if (!info.name.empty()) {
+    if (auto itr = models_.find(info.name); itr != models_.end()) {
+      return itr->second.get();
+    }
+  }
+
+  if (info.meshes.size() != 1) {
+    // todo remove
+    throw std::runtime_error("CreateModel: only single-mesh models supported");
+  }
+
+  // todo handles multiple meshes instead of [0]... how will this work ???
+  SDL_GPUBufferCreateInfo vboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
+      .size =
+          static_cast<Uint32>(info.meshes[0].vertices.size() * sizeof(Vertex)),
+      .props = 0,
+  };
+  SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
+  uploadToBuffer(vbo, info.meshes[0].vertices);
+
+  SDL_GPUBufferCreateInfo iboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+      .size =
+          static_cast<Uint32>(info.meshes[0].indices.size() * sizeof(uint32_t)),
+      .props = 0,
+  };
+  SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
+  uploadToBuffer(ibo, info.meshes[0].indices);
+
+  auto model = std::make_unique<Model>(Model{
+      .vertexBuffer = {device_, vbo},
+      .indexBuffer = {device_, ibo},
+      .indexBufferCount = static_cast<Uint32>(info.meshes[0].indices.size()),
+  });
+
+  if (!info.name.empty()) {
+    models_[info.name] = std::move(model);
+    return models_[info.name].get();
+  }
+
+  uncachedModels_.push_back(std::move(model));
+  return uncachedModels_.back().get();
 }
 
 auto GpuResourceLoader::readFile(const std::filesystem::path& path)

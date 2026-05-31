@@ -111,13 +111,15 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
     // manually checking the shader
     SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
 
-    SDL_GPUBufferBinding vboBind{.buffer = info.mesh->vertexBuffer,
+    SDL_GPUBufferBinding vboBind{.buffer = info.model->vertexBuffer,
                                  .offset = 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vboBind, 1);
-    SDL_GPUBufferBinding iboBind{.buffer = info.mesh->indexBuffer, .offset = 0};
+    SDL_GPUBufferBinding iboBind{.buffer = info.model->indexBuffer,
+                                 .offset = 0};
     SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-    SDL_DrawGPUIndexedPrimitives(pass, info.mesh->indexBufferCount, 1, 0, 0, 0);
+    SDL_DrawGPUIndexedPrimitives(pass, info.model->indexBufferCount, 1, 0, 0,
+                                 0);
   }
 
   SDL_EndGPURenderPass(pass);

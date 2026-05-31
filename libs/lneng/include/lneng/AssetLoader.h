@@ -1,12 +1,12 @@
 #pragma once
 #include <filesystem>
-#include "ModelInfo.h"
+#include "Model.h"
 
 namespace lneng {
 
 class AssetLoader {
  public:
-  auto LoadGlb(const std::filesystem::path& path) -> ModelInfo;
+  auto LoadGlb(const std::filesystem::path& path) -> Model::Creation;
 };
 
 }  // namespace lneng
