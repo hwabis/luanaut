@@ -7,7 +7,7 @@ namespace lneng {
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 auto AssetLoader::LoadGlb(const std::filesystem::path& path)
-    -> Model::Creation {
+    -> ModelCreateInfo {
   fastgltf::Parser parser;
 
   auto data = fastgltf::GltfDataBuffer::FromPath(path);
@@ -21,11 +21,11 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
     throw std::runtime_error("Failed to parse GLB: " + path.string());
   }
 
-  Model::Creation result;
+  ModelCreateInfo result;
   result.name = path.stem().string();
 
   for (auto& fgMesh : asset->meshes) {
-    Model::Creation::Mesh meshInfo;
+    ModelCreateInfo::Mesh meshInfo;
 
     for (auto& primitive : fgMesh.primitives) {
       size_t initialVtx = meshInfo.vertices.size();

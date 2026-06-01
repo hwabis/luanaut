@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "GpuGraphicsPipelineInfo.h"
 #include "Model.h"
+#include "ModelCreateInfo.h"
 #include "SdlHandles.h"
 
 namespace lneng {
@@ -16,7 +17,7 @@ class GpuResourceLoader {
 
   auto CreateGpuGraphicsPipeline(const GpuGraphicsPipelineInfo& info)
       -> SdlGpuGraphicsPipelineHandle*;
-  auto CreateModel(const Model::Creation& info) -> Model*;
+  auto CreateModel(const ModelCreateInfo& info) -> Model*;
 
  private:
   static auto readFile(const std::filesystem::path& path)

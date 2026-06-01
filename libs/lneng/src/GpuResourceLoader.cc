@@ -115,7 +115,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
   return pipelines_[info.GetHashKey()].get();
 }
 
-auto GpuResourceLoader::CreateModel(const Model::Creation& info) -> Model* {
+auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   if (!info.name.empty()) {
     if (auto itr = models_.find(info.name); itr != models_.end()) {
       return itr->second.get();

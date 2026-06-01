@@ -1,9 +1,10 @@
 #include "lneng/ModelNode.h"
 #include "lneng/GpuResourceLoader.h"
+#include "lneng/ModelCreateInfo.h"
 
 namespace lneng {
 
-ModelNode::ModelNode(Model::Creation modelInfo)
+ModelNode::ModelNode(ModelCreateInfo modelInfo)
     : modelInfo_(std::move(modelInfo)) {}
 
 auto ModelNode::Load() -> void {
