@@ -3,6 +3,7 @@
 #include <SDL3/SDL_gpu.h>
 #include <memory>
 #include "AssetLoader.h"
+#include "Clock.h"
 #include "GpuResourceLoader.h"
 #include "Node.h"
 #include "Renderer.h"
@@ -25,9 +26,10 @@ class Game : public Node {
   auto HandleEvent(const SDL_Event& event) -> bool override;
 
  private:
-  std::unique_ptr<Renderer> renderer_;
-  std::unique_ptr<AssetLoader> assetLoader_;
-  std::unique_ptr<GpuResourceLoader> gpuResourceLoader_;
+  Renderer renderer_;
+  AssetLoader assetLoader_;
+  GpuResourceLoader gpuResourceLoader_;
+  Clock clock_;
   SceneManager* sceneManager_;
 };
 

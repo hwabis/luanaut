@@ -5,13 +5,10 @@
 namespace lneng {
 
 Game::Game(std::unique_ptr<Scene> initialScene)
-    : renderer_(std::make_unique<Renderer>()),
-      assetLoader_(std::make_unique<AssetLoader>()),
-      gpuResourceLoader_(
-          std::make_unique<GpuResourceLoader>(renderer_->GetWindow(),
-                                              renderer_->GetDevice())) {
-  deps_->Cache(assetLoader_.get());
-  deps_->Cache(gpuResourceLoader_.get());
+    : gpuResourceLoader_(renderer_.GetWindow(), renderer_.GetDevice()) {
+  deps_->Cache(&assetLoader_);
+  deps_->Cache(&gpuResourceLoader_);
+  deps_->Cache(&clock_);
 
   auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene));
   sceneManager_ = sceneManager.get();
@@ -24,9 +21,11 @@ Game::~Game() {
 }
 
 auto Game::Update() -> void {
+  clock_.Update();
+
   std::vector<DrawInfo> drawInfos;
   DrawSubTree(drawInfos);
-  renderer_->Draw(drawInfos);
+  renderer_.Draw(drawInfos);
 }
 
 auto Game::HandleEvent(const SDL_Event& event) -> bool {
