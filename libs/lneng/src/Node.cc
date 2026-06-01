@@ -27,7 +27,7 @@ auto Node::UpdateSubTree() -> void {
   }
 }
 
-auto Node::DrawSubTree(std::vector<DrawInfo>& out) -> void {
+auto Node::DrawSubTree(SceneInfo& out) -> void {
   Draw(out);
 
   for (auto& child : children_) {
@@ -69,7 +69,7 @@ auto Node::Load() -> void {}
 
 auto Node::Update() -> void {}
 
-auto Node::Draw(std::vector<DrawInfo>& /*out*/) -> void {}
+auto Node::Draw(SceneInfo& /*out*/) -> void {}
 
 auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
   return false;

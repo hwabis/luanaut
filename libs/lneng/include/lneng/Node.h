@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include "DependencyContainer.h"
-#include "DrawInfo.h"
+#include "SceneInfo.h"
 #include "Transform.h"
 
 namespace lneng {
@@ -32,12 +32,12 @@ class Node {
 
  protected:
   auto UpdateSubTree() -> void;
-  auto DrawSubTree(std::vector<DrawInfo>& out) -> void;
+  auto DrawSubTree(SceneInfo& out) -> void;
   auto HandleEventSubTree(const SDL_Event& event) -> bool;
 
   virtual auto Load() -> void;
   virtual auto Update() -> void;
-  virtual auto Draw(std::vector<DrawInfo>& out) -> void;
+  virtual auto Draw(SceneInfo& out) -> void;
   virtual auto HandleEvent(const SDL_Event& event) -> bool;
 
   std::unique_ptr<DependencyContainer> deps_ =

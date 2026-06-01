@@ -1,5 +1,5 @@
 #pragma once
-#include "DrawInfo.h"
+#include "SceneInfo.h"
 #include "SdlHandles.h"
 
 namespace lneng {
@@ -8,7 +8,7 @@ class Renderer {
  public:
   Renderer();
 
-  auto Draw(const std::vector<DrawInfo>& draws) -> void;
+  auto Draw(const SceneInfo& scene) -> void;
 
   [[nodiscard]] auto GetDevice() const -> SDL_GPUDevice*;
   [[nodiscard]] auto GetWindow() const -> SDL_Window*;

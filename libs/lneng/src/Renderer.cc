@@ -27,7 +27,7 @@ Renderer::Renderer()
   SDL_ClaimWindowForGPUDevice(device_, window_);
 }
 
-auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
+auto Renderer::Draw(const SceneInfo& scene) -> void {
   SDL_GPUCommandBuffer* cmdBuf = SDL_AcquireGPUCommandBuffer(device_);
   if (cmdBuf == nullptr) {
     throw std::runtime_error(SDL_GetError());
@@ -89,12 +89,13 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
   };
   SDL_SetGPUViewport(pass, &viewport);
 
-  SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
+  // todo set up frag shader ubo with scene.lights
 
-  for (const auto& info : draws) {
-    if (info.pipeline != boundPipeline) {
-      SDL_BindGPUGraphicsPipeline(pass, *info.pipeline);
-      boundPipeline = info.pipeline;
+  SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
+  for (const auto& draw : scene.draws) {
+    if (draw.pipeline != boundPipeline) {
+      SDL_BindGPUGraphicsPipeline(pass, *draw.pipeline);
+      boundPipeline = draw.pipeline;
     }
 
     // todo camera node
@@ -106,19 +107,19 @@ auto Renderer::Draw(const std::vector<DrawInfo>& draws) -> void {
     glm::mat4 proj = glm::perspectiveLH_ZO(
         glm::radians(fov),
         static_cast<float>(width) / static_cast<float>(height), zNear, zFar);
-    glm::mat4 mvp = proj * view * info.worldTransform;
+    glm::mat4 mvp = proj * view * draw.worldTransform;
     // todo feels like uploading smth random, is there a way to know without
     // manually checking the shader
     SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
 
-    SDL_GPUBufferBinding vboBind{.buffer = info.model->vertexBuffer,
+    SDL_GPUBufferBinding vboBind{.buffer = draw.model->vertexBuffer,
                                  .offset = 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vboBind, 1);
-    SDL_GPUBufferBinding iboBind{.buffer = info.model->indexBuffer,
+    SDL_GPUBufferBinding iboBind{.buffer = draw.model->indexBuffer,
                                  .offset = 0};
     SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-    SDL_DrawGPUIndexedPrimitives(pass, info.model->indexBufferCount, 1, 0, 0,
+    SDL_DrawGPUIndexedPrimitives(pass, draw.model->indexBufferCount, 1, 0, 0,
                                  0);
   }
 

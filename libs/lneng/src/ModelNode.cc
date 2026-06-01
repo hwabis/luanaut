@@ -19,8 +19,8 @@ auto ModelNode::Load() -> void {
   model_ = gpuLoader->CreateModel(modelInfo_);
 }
 
-auto ModelNode::Draw(std::vector<DrawInfo>& out) -> void {
-  out.push_back(DrawInfo{
+auto ModelNode::Draw(SceneInfo& out) -> void {
+  out.draws.push_back(DrawInfo{
       .worldTransform = GetWorldTransform(),
       .pipeline = pipeline_,
       .model = model_,

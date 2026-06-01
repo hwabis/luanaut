@@ -11,7 +11,7 @@ class ModelNode : public Node {
 
  protected:
   auto Load() -> void override;
-  auto Draw(std::vector<DrawInfo>& out) -> void override;
+  auto Draw(SceneInfo& out) -> void override;
 
  private:
   ModelCreateInfo modelInfo_;

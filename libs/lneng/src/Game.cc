@@ -23,9 +23,9 @@ Game::~Game() {
 auto Game::Update() -> void {
   clock_.Update();
 
-  std::vector<DrawInfo> drawInfos;
-  DrawSubTree(drawInfos);
-  renderer_.Draw(drawInfos);
+  SceneInfo sceneInfo;
+  DrawSubTree(sceneInfo);
+  renderer_.Draw(sceneInfo);
 }
 
 auto Game::HandleEvent(const SDL_Event& event) -> bool {
