@@ -19,7 +19,7 @@ class MyAwesomeGame : public lneng::Game {
       AddChild(std::make_unique<RotatingModelNode>(duck));
       AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
           .direction = {0, -1, 1},
-          .color = {255, 255, 255},
+          .color = {1, 1, 1},
       }));
     }
   };
