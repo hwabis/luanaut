@@ -2,6 +2,7 @@
 #include <SDL3/SDL_gpu.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
+#include "lneng/LightUbo.h"
 #include "lneng/SdlHandles.h"
 
 namespace lneng {
@@ -89,7 +90,12 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
   };
   SDL_SetGPUViewport(pass, &viewport);
 
-  // todo set up frag shader ubo with scene.lights
+  LightUbo lightUbo;
+  for (const auto& light : scene.lights) {
+    lightUbo.lights[lightUbo.lightCount] = light;
+    ++lightUbo.lightCount;
+  }
+  SDL_PushGPUFragmentUniformData(cmdBuf, 0, &lightUbo, sizeof(lightUbo));
 
   SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
   for (const auto& draw : scene.draws) {

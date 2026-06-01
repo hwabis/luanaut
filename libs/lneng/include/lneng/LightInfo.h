@@ -3,9 +3,10 @@
 
 namespace lneng {
 
-struct LightInfo {
-  glm::vec3 direction;
-  glm::vec3 color;
+constexpr int fragShaderAlign = 16;
+struct alignas(fragShaderAlign) LightInfo {
+  glm::vec3 direction{};
+  glm::vec3 color{};
 };
 
 }  // namespace lneng
