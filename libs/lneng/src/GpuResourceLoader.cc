@@ -68,7 +68,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
   SDL_GPURasterizerState rasterizerState = {};
   rasterizerState.fill_mode = SDL_GPU_FILLMODE_FILL;
   rasterizerState.cull_mode = SDL_GPU_CULLMODE_BACK;
-  rasterizerState.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
+  rasterizerState.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
 
   SDL_GPUMultisampleState multisampleState = {};
   multisampleState.sample_count = SDL_GPU_SAMPLECOUNT_1;
