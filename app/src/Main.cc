@@ -1,5 +1,6 @@
 #include <lneng/AssetLoader.h>
 #include <lneng/Game.h>
+#include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
 
 class MyAwesomeGame : public lneng::Game {
@@ -16,6 +17,10 @@ class MyAwesomeGame : public lneng::Game {
       auto duck = assetLoader->LoadGlb(duckPath);
 
       AddChild(std::make_unique<RotatingModelNode>(duck));
+      AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
+          .direction = {0, -1, 1},
+          .color = {255, 255, 255},
+      }));
     }
   };
 
