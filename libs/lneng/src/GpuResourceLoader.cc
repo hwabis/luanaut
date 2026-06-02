@@ -24,7 +24,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
       .num_samplers = 0,
       .num_storage_textures = 0,
       .num_storage_buffers = 0,
-      .num_uniform_buffers = 1,
+      .num_uniform_buffers = 2,
       .props = 0,
   };
   SDL_GPUShader* vertShader = SDL_CreateGPUShader(device_, &vertInfo);

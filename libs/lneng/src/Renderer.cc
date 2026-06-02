@@ -105,8 +105,8 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
     }
 
     // todo camera node
-    glm::mat4 view = glm::lookAtLH(glm::vec3(0, 100, 300), glm::vec3(0, 0, 0),
-                                   glm::vec3(0, 1, 0));
+    glm::mat4 view = glm::lookAtLH(glm::vec3(0, 100, -300),
+                                   glm::vec3(0, 100, 0), glm::vec3(0, 1, 0));
     constexpr float fov = 60;
     constexpr float zNear = 0.1F;
     constexpr float zFar = 1000;
@@ -114,9 +114,11 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
         glm::radians(fov),
         static_cast<float>(width) / static_cast<float>(height), zNear, zFar);
     glm::mat4 mvp = proj * view * draw.worldTransform;
-    // todo feels like uploading smth random, is there a way to know without
-    // manually checking the shader
     SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
+    glm::mat4 normalMatrix{
+        glm::transpose(glm::inverse(glm::mat3(draw.worldTransform)))};
+    SDL_PushGPUVertexUniformData(cmdBuf, 1, &normalMatrix,
+                                 sizeof(normalMatrix));
 
     SDL_GPUBufferBinding vboBind{.buffer = draw.model->vertexBuffer,
                                  .offset = 0};

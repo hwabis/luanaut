@@ -1,5 +1,8 @@
-cbuffer VertUniform : register(b0, space1) {
+cbuffer MvpUniform : register(b0, space1) {
   float4x4 mvp;
+};
+cbuffer NormalUniform : register(b1, space1) {
+  float4x4 normalMatrix; // Really a 3x3 (4x4 only for alignment)
 };
 
 struct VSInput {
@@ -19,7 +22,7 @@ struct VSOutput {
 VSOutput vertMain(VSInput input) {
   VSOutput output;
   output.pos = mul(mvp, float4(input.pos, 1.0));
-  output.normal = input.normal;
+  output.normal = mul((float3x3)normalMatrix, input.normal);
   output.uv = input.uv;
   output.color = input.color;
   return output;
