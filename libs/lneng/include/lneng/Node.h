@@ -2,6 +2,7 @@
 #include <SDL3/SDL_events.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include "Clock.h"
 #include "DependencyContainer.h"
 #include "SceneInfo.h"
 #include "Transform.h"
@@ -42,6 +43,8 @@ class Node {
 
   std::unique_ptr<DependencyContainer> deps_ =
       std::make_unique<DependencyContainer>();
+
+  Clock* clock_ = nullptr;
 
  private:
   glm::mat4x4 worldTransform_{1.0F};

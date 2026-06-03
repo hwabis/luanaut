@@ -51,6 +51,7 @@ auto Node::GetChildren() const -> const std::vector<std::unique_ptr<Node>>& {
 
 auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   node->parent_ = this;
+  node->clock_ = clock_;
 
   auto childDeps = std::make_unique<DependencyContainer>();
   childDeps->parent = deps_.get();

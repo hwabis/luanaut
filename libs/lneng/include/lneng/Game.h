@@ -29,7 +29,7 @@ class Game : public Node {
   Renderer renderer_;
   AssetLoader assetLoader_;
   GpuResourceLoader gpuResourceLoader_;
-  Clock clock_;
+  Clock ownedClock_;
   SceneManager* sceneManager_;
 };
 

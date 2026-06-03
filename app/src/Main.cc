@@ -30,12 +30,10 @@ class MyAwesomeGame : public lneng::Game {
         : lneng::ModelNode(std::move(modelInfo)) {}
 
     auto Update() -> void override {
-      auto* clock = deps_->Resolve<lneng::Clock>();
-
       constexpr float speed = 0.1F;
       transform.rotation =
           glm::angleAxis(glm::radians(speed * static_cast<float>(
-                                                  clock->deltaTime.count())),
+                                                  clock_->deltaTime.count())),
                          glm::vec3(0, 1, 0)) *
           transform.rotation;
 
