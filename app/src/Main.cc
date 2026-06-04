@@ -37,25 +37,6 @@ class MyAwesomeGame : public lneng::Game {
       }));
     }
   };
-
-  class RotatingModelNode : public lneng::ModelNode {
-   public:
-    RotatingModelNode(lneng::ModelCreateInfo modelInfo)
-        : lneng::ModelNode(std::move(modelInfo)) {}
-
-    auto Update() -> void override {
-      constexpr float speed = 0.1F;
-      transform.rotation =
-          glm::angleAxis(glm::radians(speed * static_cast<float>(
-                                                  clock_->deltaTimeMs.count())),
-                         glm::vec3(0, 1, 0)) *
-          transform.rotation;
-
-      // todo eventually we want the transform/keyframe system, something like:
-      // box.RotateTo(90, duration: 1000, easing: Easing.OutQuint)
-      //    .Loop(0); // 0ms pause between iterations
-    }
-  };
 };
 
 #define LNENG_GAME_CLASS MyAwesomeGame
