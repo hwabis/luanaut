@@ -5,14 +5,13 @@
 namespace lneng {
 
 struct Clock {
-  std::chrono::milliseconds currentTime =
-      std::chrono::milliseconds(SDL_GetTicks());
-  std::chrono::milliseconds deltaTime{};
+  std::chrono::steady_clock::time_point now{std::chrono::steady_clock::now()};
+  std::chrono::duration<float, std::milli> deltaTimeMs{0.0F};
 
   auto Update() -> void {
-    auto now = static_cast<std::chrono::milliseconds>(SDL_GetTicks());
-    deltaTime = now - currentTime;
-    currentTime = now;
+    auto lastFrameTime = now;
+    now = std::chrono::steady_clock::now();
+    deltaTimeMs = now - lastFrameTime;
   }
 };
 

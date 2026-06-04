@@ -15,8 +15,22 @@ class MyAwesomeGame : public lneng::Game {
       std::filesystem::path duckPath =
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
       auto duck = assetLoader->LoadGlb(duckPath);
+      auto duckNode = std::make_unique<lneng::ModelNode>(duck);
+      auto* duckNodePtr = duckNode.get();
+      AddChild(std::move(duckNode));
 
-      AddChild(std::make_unique<RotatingModelNode>(duck));
+      using namespace std::chrono_literals;
+      // Annoying sequencing right now but it works!!
+      duckNodePtr->Rotate(
+          clock_->now, clock_->now + 3s, duckNodePtr->transform.rotation,
+          duckNodePtr->transform.rotation *
+              glm::angleAxis(glm::radians(179.9F), glm::vec3(0, 1, 0)));
+      duckNodePtr->Rotate(
+          clock_->now + 3s, clock_->now + 4s,
+          duckNodePtr->transform.rotation *
+              glm::angleAxis(glm::radians(180.1F), glm::vec3(0, 1, 0)),
+          duckNodePtr->transform.rotation);
+
       AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
           .direction = {0, 0, 1},
           .color = {1, 1, 1},
@@ -33,7 +47,7 @@ class MyAwesomeGame : public lneng::Game {
       constexpr float speed = 0.1F;
       transform.rotation =
           glm::angleAxis(glm::radians(speed * static_cast<float>(
-                                                  clock_->deltaTime.count())),
+                                                  clock_->deltaTimeMs.count())),
                          glm::vec3(0, 1, 0)) *
           transform.rotation;
 
