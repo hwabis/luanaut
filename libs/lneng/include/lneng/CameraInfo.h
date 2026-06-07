@@ -4,8 +4,10 @@
 namespace lneng {
 
 struct CameraInfo {
-  glm::mat4 transformMat{};
-  glm::mat4 projectionMat{};
+  glm::mat4 viewMat{};
+  float fovDeg{};
+  float zNear{};
+  float zFar{};
 };
 
 }  // namespace lneng

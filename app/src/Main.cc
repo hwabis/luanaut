@@ -3,6 +3,7 @@
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
+#include <lneng/Transform.h>
 
 class MyAwesomeGame : public lneng::Game {
  public:
@@ -11,7 +12,10 @@ class MyAwesomeGame : public lneng::Game {
  private:
   class MyAwesomeScene : public lneng::Scene {
    public:
-    auto Load() -> void override {
+    MyAwesomeScene()
+        : Scene(lneng::Transform{.position = {0, 100, -300}}, 60) {}
+
+    auto LoadScene() -> void override {
       auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
       std::filesystem::path duckPath =
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
@@ -36,11 +40,6 @@ class MyAwesomeGame : public lneng::Game {
           .direction = {0, 0, 1},
           .color = {1, 1, 1},
       }));
-
-      auto cameraNode = std::make_unique<lneng::Camera>(60);
-      auto* cameraNodePtr = cameraNode.get();
-      AddChild(std::move(cameraNode));
-      cameraNodePtr->transform.position = glm::vec3(0, 100, -300);
     }
   };
 };

@@ -104,8 +104,11 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
       boundPipeline = draw.pipeline;
     }
 
-    glm::mat4 mvp = scene.camera.projectionMat * scene.camera.transformMat *
-                    draw.worldTransform;
+    glm::mat4 proj = glm::perspectiveLH_ZO(
+        glm::radians(scene.camera.fovDeg),
+        static_cast<float>(width) / static_cast<float>(height),
+        scene.camera.zNear, scene.camera.zFar);
+    glm::mat4 mvp = proj * scene.camera.viewMat * draw.worldTransform;
     SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
     glm::mat4 normalMatrix{
         glm::transpose(glm::inverse(glm::mat3(draw.worldTransform)))};

@@ -7,9 +7,10 @@ Camera::Camera(float fovDeg) : fovDeg_(fovDeg) {}
 
 auto Camera::Draw(SceneInfo& out) -> void {
   out.camera = {
-      .transformMat = glm::inverse(GetWorldTransform()),
-      .projectionMat = glm::perspectiveLH_ZO(
-          glm::radians(fovDeg_), windowWidth_ / windowHeight_, 1.0F, 1000.0F),
+      .viewMat = glm::inverse(GetWorldTransform()),
+      .fovDeg = fovDeg_,
+      .zNear = 1,
+      .zFar = 1000,
   };
 }
 

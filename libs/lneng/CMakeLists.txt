@@ -13,6 +13,7 @@ add_library(lneng
   src/ModelNode.cc
   src/Node.cc
   src/Renderer.cc
+  src/Scene.cc
   src/SceneManager.cc
 )
 
