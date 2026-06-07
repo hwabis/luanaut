@@ -1,4 +1,5 @@
 #include <lneng/AssetLoader.h>
+#include <lneng/Camera.h>
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
@@ -35,6 +36,11 @@ class MyAwesomeGame : public lneng::Game {
           .direction = {0, 0, 1},
           .color = {1, 1, 1},
       }));
+
+      auto cameraNode = std::make_unique<lneng::Camera>(60);
+      auto* cameraNodePtr = cameraNode.get();
+      AddChild(std::move(cameraNode));
+      cameraNodePtr->transform.position = glm::vec3(0, 100, -300);
     }
   };
 };
