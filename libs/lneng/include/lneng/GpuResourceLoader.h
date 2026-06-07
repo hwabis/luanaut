@@ -51,6 +51,8 @@ class GpuResourceLoader {
     SDL_SubmitGPUCommandBuffer(cmd);
     SDL_ReleaseGPUTransferBuffer(device_, transferBuf);
   }
+  auto uploadToTexture(SDL_GPUTexture* target,
+                       const ModelCreateInfo::Texture& texInfo) -> void;
 
   std::unordered_map<std::string, std::unique_ptr<SdlGpuGraphicsPipelineHandle>>
       pipelines_;

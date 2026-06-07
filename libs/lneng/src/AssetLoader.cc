@@ -1,4 +1,5 @@
 #include "lneng/AssetLoader.h"
+#include <stb_image.h>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
 #include <stdexcept>
@@ -76,7 +77,62 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
     result.meshes.push_back(std::move(meshInfo));
   }
 
+  for (auto& fgImage : asset->images) {
+    auto* inlineData =
+        std::get_if<fastgltf::sources::BufferView>(&fgImage.data);
+    if (inlineData == nullptr) {
+      throw std::runtime_error("Only supports .glb files (for now)");
+    }
+
+    auto& bufferView = asset->bufferViews[inlineData->bufferViewIndex];
+    auto& buffer = asset->buffers[bufferView.bufferIndex];
+
+    std::visit(
+        fastgltf::visitor{
+            [](auto&) {
+              throw std::runtime_error("Unsupported buffer source type");
+            },
+            [&](fastgltf::sources::Array& arr) {
+              const std::byte* rawBytes =
+                  arr.bytes.data() + bufferView.byteOffset;
+              size_t byteLength = bufferView.byteLength;
+              result.textures.push_back(decodeImageBytes(rawBytes, byteLength));
+            },
+            [&](fastgltf::sources::Vector& vec) {
+              const std::byte* rawBytes =
+                  vec.bytes.data() + bufferView.byteOffset;
+              size_t byteLength = bufferView.byteLength;
+              result.textures.push_back(decodeImageBytes(rawBytes, byteLength));
+            },
+        },
+        buffer.data);
+  }
+
   return result;
+}
+
+auto AssetLoader::decodeImageBytes(const std::byte* data, size_t size)
+    -> ModelCreateInfo::Texture {
+  int width;
+  int height;
+  int channels;
+  unsigned char* pixels = stbi_load_from_memory(
+      reinterpret_cast<const uint8_t*>(data), static_cast<int>(size), &width,
+      &height, &channels, 4);
+  if (pixels == nullptr) {
+    throw std::runtime_error("stbi load failed");
+  }
+
+  ModelCreateInfo::Texture texture;
+  texture.width = static_cast<uint32_t>(width);
+  texture.height = static_cast<uint32_t>(height);
+
+  size_t totalBytes = static_cast<size_t>(width) * height * 4;
+  texture.pixelsRgba8.assign(pixels, pixels + totalBytes);
+
+  stbi_image_free(pixels);
+
+  return texture;
 }
 
 }  // namespace lneng

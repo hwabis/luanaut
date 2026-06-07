@@ -121,6 +121,7 @@ class SdlGpuHandle {
 
 using SdlGpuBufferHandle = SdlGpuHandle<SDL_GPUBuffer, SDL_ReleaseGPUBuffer>;
 using SdlGpuTextureHandle = SdlGpuHandle<SDL_GPUTexture, SDL_ReleaseGPUTexture>;
+using SdlGpuSamplerHandle = SdlGpuHandle<SDL_GPUSampler, SDL_ReleaseGPUSampler>;
 using SdlGpuGraphicsPipelineHandle =
     SdlGpuHandle<SDL_GPUGraphicsPipeline, SDL_ReleaseGPUGraphicsPipeline>;
 

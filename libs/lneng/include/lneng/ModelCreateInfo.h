@@ -11,10 +11,15 @@ struct ModelCreateInfo {
     std::vector<uint32_t> indices;
   };
 
+  struct Texture {
+    std::vector<uint8_t> pixelsRgba8;
+    uint32_t width{};
+    uint32_t height{};
+  };
+
   std::vector<Mesh> meshes;
-  // todo
-  // textures
-  // samplers
+  std::vector<Texture> textures;
+  // todo add samplers to be able to use a non-default
 
   // Set unique name if caching desired
   std::string name;

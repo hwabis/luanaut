@@ -146,10 +146,42 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
   uploadToBuffer(ibo, info.meshes[0].indices);
 
+  std::vector<SdlGpuTextureHandle> assetTextures;
+  for (const auto& texInfo : info.textures) {
+    SDL_GPUTextureCreateInfo texCreateInfo = {
+        .type = SDL_GPU_TEXTURETYPE_2D,
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
+        .width = static_cast<Uint32>(texInfo.width),
+        .height = static_cast<Uint32>(texInfo.height),
+        .layer_count_or_depth = 1,
+        .num_levels = 1,
+        .sample_count = SDL_GPU_SAMPLECOUNT_1,
+        .props = 0};
+
+    SDL_GPUTexture* texture = SDL_CreateGPUTexture(device_, &texCreateInfo);
+    uploadToTexture(texture, texInfo);
+    assetTextures.emplace_back(device_, texture);
+  }
+
+  SDL_GPUSamplerCreateInfo samplerInfo{};
+  samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+  samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+  samplerInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+  samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+  samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+  samplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+  samplerInfo.max_lod = 1000;
+  SDL_GPUSampler* defaultSampler = SDL_CreateGPUSampler(device_, &samplerInfo);
+  std::vector<SdlGpuSamplerHandle> samplers;
+  samplers.emplace_back(device_, defaultSampler);
+
   auto model = std::make_unique<Model>(Model{
       .vertexBuffer = {device_, vbo},
       .indexBuffer = {device_, ibo},
       .indexBufferCount = static_cast<Uint32>(info.meshes[0].indices.size()),
+      .textures = std::move(assetTextures),
+      .samplers = std::move(samplers),
   });
 
   if (!info.name.empty()) {
@@ -175,6 +207,47 @@ auto GpuResourceLoader::readFile(const std::filesystem::path& path)
             static_cast<std::streamsize>(fileSize));
 
   return buffer;
+}
+
+auto GpuResourceLoader::uploadToTexture(SDL_GPUTexture* target,
+                                        const ModelCreateInfo::Texture& texInfo)
+    -> void {
+  uint32_t bufferSize = texInfo.pixelsRgba8.size();
+
+  SDL_GPUTransferBufferCreateInfo transferInfo = {
+      .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+      .size = bufferSize,
+      .props = 0};
+  SDL_GPUTransferBuffer* transferBuffer =
+      SDL_CreateGPUTransferBuffer(device_, &transferInfo);
+
+  void* mappedMem = SDL_MapGPUTransferBuffer(device_, transferBuffer, false);
+  std::memcpy(mappedMem, texInfo.pixelsRgba8.data(), bufferSize);
+  SDL_UnmapGPUTransferBuffer(device_, transferBuffer);
+
+  SDL_GPUCommandBuffer* cmdBuf = SDL_AcquireGPUCommandBuffer(device_);
+  SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmdBuf);
+
+  SDL_GPUTextureTransferInfo sourceInfo = {.transfer_buffer = transferBuffer,
+                                           .offset = 0,
+                                           .pixels_per_row = texInfo.width,
+                                           .rows_per_layer = texInfo.height};
+
+  SDL_GPUTextureRegion destRegion = {.texture = target,
+                                     .mip_level = 0,
+                                     .layer = 0,
+                                     .x = 0,
+                                     .y = 0,
+                                     .z = 0,
+                                     .w = texInfo.width,
+                                     .h = texInfo.height,
+                                     .d = 1};
+
+  SDL_UploadToGPUTexture(copyPass, &sourceInfo, &destRegion, false);
+
+  SDL_EndGPUCopyPass(copyPass);
+  SDL_SubmitGPUCommandBuffer(cmdBuf);
+  SDL_ReleaseGPUTransferBuffer(device_, transferBuffer);
 }
 
 }  // namespace lneng

@@ -3,6 +3,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/set_target_defaults.cmake)
 find_package(fastgltf CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
+find_package(stb REQUIRED)
 
 add_library(lneng
   src/AssetLoader.cc
@@ -15,13 +16,17 @@ add_library(lneng
   src/Renderer.cc
   src/Scene.cc
   src/SceneManager.cc
+  src/StbImpl.cc
 )
 
 set_target_defaults(lneng)
 
 target_include_directories(lneng
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${STB_INCLUDE_DIR}
 )
 
 target_link_libraries(lneng
