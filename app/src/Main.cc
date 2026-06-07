@@ -40,6 +40,10 @@ class MyAwesomeGame : public lneng::Game {
           .direction = {0, 0, 1},
           .color = {1, 1, 1},
       }));
+
+      auto* camera = deps_->Resolve<lneng::Camera>();
+      camera->Move(clock_->now, clock_->now + 4s, camera->transform.position,
+                   camera->transform.position + glm::vec3{0, 0, 300});
     }
   };
 };
