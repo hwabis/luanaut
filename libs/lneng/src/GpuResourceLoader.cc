@@ -39,7 +39,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
       .entrypoint = "fragMain",
       .format = SDL_GPU_SHADERFORMAT_SPIRV,
       .stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
-      .num_samplers = 0,
+      .num_samplers = 1,
       .num_storage_textures = 0,
       .num_storage_buffers = 0,
       .num_uniform_buffers = 1,
@@ -150,6 +150,7 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   for (const auto& texInfo : info.textures) {
     SDL_GPUTextureCreateInfo texCreateInfo = {
         .type = SDL_GPU_TEXTURETYPE_2D,
+        // todo srgb
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
         .width = static_cast<Uint32>(texInfo.width),

@@ -122,6 +122,10 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
                                  .offset = 0};
     SDL_BindGPUIndexBuffer(pass, &iboBind, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
+    // todo handle texture vector from material
+    SDL_GPUTextureSamplerBinding bind{.texture = draw.model->textures[0],
+                                      .sampler = draw.model->samplers[0]};
+    SDL_BindGPUFragmentSamplers(pass, 0, &bind, 1);
     SDL_DrawGPUIndexedPrimitives(pass, draw.model->indexBufferCount, 1, 0, 0,
                                  0);
   }

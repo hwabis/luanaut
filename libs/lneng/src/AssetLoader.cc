@@ -77,6 +77,7 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
     result.meshes.push_back(std::move(meshInfo));
   }
 
+  result.textures.reserve(asset->images.size());
   for (auto& fgImage : asset->images) {
     auto* inlineData =
         std::get_if<fastgltf::sources::BufferView>(&fgImage.data);

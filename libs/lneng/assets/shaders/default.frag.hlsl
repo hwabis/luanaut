@@ -3,6 +3,9 @@ struct DirectionalLight {
   float3 color;
 };
 
+Texture2D albedoTex : register(t0, space2);
+SamplerState albedoSampler : register(s0, space2);
+
 cbuffer LightUBO : register(b0, space3) {
   DirectionalLight lights[8];
   int lightCount;
@@ -18,6 +21,8 @@ struct VSOutput {
 static const float3 AMBIENT = float3(0.1, 0.1, 0.1);
 
 float4 fragMain(VSOutput input) : SV_Target {
+  float4 albedo = albedoTex.Sample(albedoSampler, input.uv);
+
   float3 normal = normalize(input.normal);
   float3 result = AMBIENT;
 
@@ -26,5 +31,5 @@ float4 fragMain(VSOutput input) : SV_Target {
     result += lights[i].color * diffuse;
   }
 
-  return float4(result, 1.0);
+  return float4(result * albedo.rgb, albedo.a);
 }

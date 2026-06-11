@@ -19,7 +19,7 @@ struct Model {
   // };
   // std::vector<Mesh> meshes;
   // std::vector<Material> materials;
-  // Material contains index to the textures/samplers vectors or smth
+  // Material contains indices to the textures/samplers vectors or smth
   // Make sure to update createinfo if anything here changes...
 };
 
