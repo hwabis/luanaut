@@ -1,4 +1,5 @@
 #include "lneng/GpuResourceLoader.h"
+#include <SDL3/SDL_gpu.h>
 #include <fstream>
 #include <stdexcept>
 #include "lneng/SdlHandles.h"
@@ -194,6 +195,54 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   return uncachedModels_.back().get();
 }
 
+auto GpuResourceLoader::CreateSkybox(SkyboxCreateInfo& info) -> Skybox* {
+  if (!info.name.empty()) {
+    if (auto itr = skyboxes_.find(info.name); itr != skyboxes_.end()) {
+      return itr->second.get();
+    }
+  }
+
+  if (info.textureXPos.width != info.textureXNeg.width ||
+      info.textureXNeg.width != info.textureYPos.width ||
+      info.textureYPos.width != info.textureYNeg.width ||
+      info.textureYNeg.width != info.textureZPos.width ||
+      info.textureZPos.width != info.textureZNeg.width) {
+    throw std::runtime_error("All textures need to be the same dimensions");
+  }
+
+  constexpr int skyboxLayerCount = 6;
+  SDL_GPUTextureCreateInfo texCreateInfo = {
+      .type = SDL_GPU_TEXTURETYPE_CUBE,
+      .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+      .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
+      .width = static_cast<Uint32>(info.textureXPos.width),
+      .height = static_cast<Uint32>(info.textureXPos.height),
+      .layer_count_or_depth = skyboxLayerCount,
+      .num_levels = 1,
+      .sample_count = SDL_GPU_SAMPLECOUNT_1,
+      .props = 0};
+
+  SDL_GPUTexture* texture = SDL_CreateGPUTexture(device_, &texCreateInfo);
+  uploadToTexture(texture, info.textureXPos, 0);
+  uploadToTexture(texture, info.textureXNeg, 1);
+  uploadToTexture(texture, info.textureYPos, 2);
+  uploadToTexture(texture, info.textureYNeg, 3);
+  uploadToTexture(texture, info.textureZPos, 4);
+  uploadToTexture(texture, info.textureZNeg, 5);
+
+  auto skybox = std::make_unique<Skybox>(Skybox{
+      .texture = {device_, texture},
+  });
+
+  if (!info.name.empty()) {
+    skyboxes_[info.name] = std::move(skybox);
+    return skyboxes_[info.name].get();
+  }
+
+  uncachedSkyboxes_.push_back(std::move(skybox));
+  return uncachedSkyboxes_.back().get();
+}
+
 auto GpuResourceLoader::readFile(const std::filesystem::path& path)
     -> std::vector<uint8_t> {
   std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -211,8 +260,8 @@ auto GpuResourceLoader::readFile(const std::filesystem::path& path)
 }
 
 auto GpuResourceLoader::uploadToTexture(SDL_GPUTexture* target,
-                                        const ModelCreateInfo::Texture& texInfo)
-    -> void {
+                                        const Texture& texInfo,
+                                        Uint32 layer) -> void {
   uint32_t bufferSize = texInfo.pixelsRgba8.size();
 
   SDL_GPUTransferBufferCreateInfo transferInfo = {
@@ -236,7 +285,7 @@ auto GpuResourceLoader::uploadToTexture(SDL_GPUTexture* target,
 
   SDL_GPUTextureRegion destRegion = {.texture = target,
                                      .mip_level = 0,
-                                     .layer = 0,
+                                     .layer = layer,
                                      .x = 0,
                                      .y = 0,
                                      .z = 0,

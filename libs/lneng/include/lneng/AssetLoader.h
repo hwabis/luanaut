@@ -9,8 +9,7 @@ class AssetLoader {
   auto LoadGlb(const std::filesystem::path& path) -> ModelCreateInfo;
 
  private:
-  static auto decodeImageBytes(const std::byte* data, size_t size)
-      -> ModelCreateInfo::Texture;
+  static auto decodeImageBytes(const std::byte* data, size_t size) -> Texture;
 };
 
 }  // namespace lneng

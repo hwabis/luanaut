@@ -113,7 +113,7 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
 }
 
 auto AssetLoader::decodeImageBytes(const std::byte* data, size_t size)
-    -> ModelCreateInfo::Texture {
+    -> Texture {
   int width;
   int height;
   int channels;
@@ -124,7 +124,7 @@ auto AssetLoader::decodeImageBytes(const std::byte* data, size_t size)
     throw std::runtime_error("stbi load failed");
   }
 
-  ModelCreateInfo::Texture texture;
+  Texture texture;
   texture.width = static_cast<uint32_t>(width);
   texture.height = static_cast<uint32_t>(height);
 

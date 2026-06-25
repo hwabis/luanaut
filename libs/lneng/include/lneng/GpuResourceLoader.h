@@ -8,6 +8,8 @@
 #include "Model.h"
 #include "ModelCreateInfo.h"
 #include "SdlHandles.h"
+#include "Skybox.h"
+#include "SkyboxCreateInfo.h"
 
 namespace lneng {
 
@@ -18,6 +20,7 @@ class GpuResourceLoader {
   auto CreateGpuGraphicsPipeline(const GpuGraphicsPipelineInfo& info)
       -> SdlGpuGraphicsPipelineHandle*;
   auto CreateModel(const ModelCreateInfo& info) -> Model*;
+  auto CreateSkybox(SkyboxCreateInfo& info) -> Skybox*;
 
  private:
   static auto readFile(const std::filesystem::path& path)
@@ -52,14 +55,17 @@ class GpuResourceLoader {
     SDL_ReleaseGPUTransferBuffer(device_, transferBuf);
   }
   auto uploadToTexture(SDL_GPUTexture* target,
-                       const ModelCreateInfo::Texture& texInfo) -> void;
+                       const Texture& texInfo,
+                       Uint32 layer = 0) -> void;
 
   std::unordered_map<std::string, std::unique_ptr<SdlGpuGraphicsPipelineHandle>>
       pipelines_;
   std::unordered_map<std::string, std::unique_ptr<Model>> models_;
+  std::unordered_map<std::string, std::unique_ptr<Skybox>> skyboxes_;
 
-  // todo this grows forever lol
+  // todo these grow forever lol
   std::vector<std::unique_ptr<Model>> uncachedModels_;
+  std::vector<std::unique_ptr<Skybox>> uncachedSkyboxes_;
 
   SDL_Window* window_;
   SDL_GPUDevice* device_;
