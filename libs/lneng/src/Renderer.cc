@@ -11,16 +11,6 @@ namespace lneng {
 constexpr int initialWidth = 800;
 constexpr int initialHeight = 600;
 
-const std::vector<glm::vec3> cubeVerts = {
-    {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
-    {-1, -1, 1},  {1, -1, 1},  {1, 1, 1},  {-1, 1, 1},
-};
-const std::vector<uint32_t> cubeIndices = {
-    0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4,  // front, back
-    0, 4, 7, 7, 3, 0, 1, 5, 6, 6, 2, 1,  // left, right
-    3, 2, 6, 6, 7, 3, 0, 1, 5, 5, 4, 0,  // top, bottom
-};
-
 Renderer::Renderer()
     : window_(SDL_CreateWindow("lneng",
                                initialWidth,
@@ -36,30 +26,6 @@ Renderer::Renderer()
   }
 
   SDL_ClaimWindowForGPUDevice(device_, window_);
-
-  SDL_GPUSamplerCreateInfo skyboxSamplerInfo{};
-  skyboxSamplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-  skyboxSamplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-  skyboxSamplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-  skyboxSamplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-  skyboxSamplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-  skyboxSampler_ = {device_, SDL_CreateGPUSampler(device_, &skyboxSamplerInfo)};
-
-  SDL_GPUBufferCreateInfo skyboxVboInfo = {
-      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size = static_cast<Uint32>(cubeVerts.size() * sizeof(glm::vec3)),
-      .props = 0,
-  };
-  SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &skyboxVboInfo);
-  skyboxVbo_ = {device_, vbo};
-
-  SDL_GPUBufferCreateInfo skyboxIboInfo = {
-      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size = static_cast<Uint32>(cubeIndices.size() * sizeof(uint32_t)),
-      .props = 0,
-  };
-  SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &skyboxIboInfo);
-  skyboxIbo_ = {device_, ibo};
 }
 
 auto Renderer::Draw(const SceneInfo& scene) -> void {
@@ -194,17 +160,17 @@ auto Renderer::drawSkybox(SkyboxInfo skybox,
 
   SDL_GPUTextureSamplerBinding texBind{
       .texture = skybox.skybox->texture,
-      .sampler = skyboxSampler_,
+      .sampler = skybox.skybox->sampler,
   };
   SDL_BindGPUFragmentSamplers(pass, 0, &texBind, 1);
 
-  SDL_GPUBufferBinding vbo{.buffer = skyboxVbo_, .offset = 0};
+  SDL_GPUBufferBinding vbo{.buffer = skybox.skybox->vertexBuffer, .offset = 0};
   SDL_BindGPUVertexBuffers(pass, 0, &vbo, 1);
-  SDL_GPUBufferBinding ibo{.buffer = skyboxIbo_, .offset = 0};
+  SDL_GPUBufferBinding ibo{.buffer = skybox.skybox->indexBuffer, .offset = 0};
   SDL_BindGPUIndexBuffer(pass, &ibo, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-  constexpr int skyboxIndexCount = 36;
-  SDL_DrawGPUIndexedPrimitives(pass, skyboxIndexCount, 1, 0, 0, 0);
+  SDL_DrawGPUIndexedPrimitives(pass, skybox.skybox->indexBufferCount, 1, 0, 0,
+                               0);
 }
 
 }  // namespace lneng

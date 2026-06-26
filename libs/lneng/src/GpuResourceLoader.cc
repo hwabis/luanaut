@@ -6,6 +6,16 @@
 
 namespace lneng {
 
+const std::vector<glm::vec3> cubeVerts = {
+    {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
+    {-1, -1, 1},  {1, -1, 1},  {1, 1, 1},  {-1, 1, 1},
+};
+const std::vector<uint32_t> cubeIndices = {
+    0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4,  // front, back
+    0, 4, 7, 7, 3, 0, 1, 5, 6, 6, 2, 1,  // left, right
+    3, 2, 6, 6, 7, 3, 0, 1, 5, 5, 4, 0,  // top, bottom
+};
+
 GpuResourceLoader::GpuResourceLoader(SDL_Window* window, SDL_GPUDevice* device)
     : window_(window), device_(device) {}
 
@@ -231,8 +241,38 @@ auto GpuResourceLoader::CreateSkybox(SkyboxCreateInfo& info) -> Skybox* {
   uploadToTexture(texture, info.textureZPos, 4);
   uploadToTexture(texture, info.textureZNeg, 5);
 
+  SDL_GPUSamplerCreateInfo samplerInfo{};
+  samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+  samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+  samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  samplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  SdlGpuSamplerHandle sampler = {device_,
+                                 SDL_CreateGPUSampler(device_, &samplerInfo)};
+
+  SDL_GPUBufferCreateInfo skyboxVboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
+      .size = static_cast<Uint32>(cubeVerts.size() * sizeof(glm::vec3)),
+      .props = 0,
+  };
+  SdlGpuBufferHandle vertexBuffer = {
+      device_, SDL_CreateGPUBuffer(device_, &skyboxVboInfo)};
+  uploadToBuffer(vertexBuffer, cubeVerts);
+
+  SDL_GPUBufferCreateInfo skyboxIboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+      .size = static_cast<Uint32>(cubeIndices.size() * sizeof(uint32_t)),
+      .props = 0,
+  };
+  SdlGpuBufferHandle indexBuffer = {
+      device_, SDL_CreateGPUBuffer(device_, &skyboxIboInfo)};
+  uploadToBuffer(indexBuffer, cubeIndices);
+
   auto skybox = std::make_unique<Skybox>(Skybox{
       .texture = {device_, texture},
+      .sampler = std::move(sampler),
+      .vertexBuffer = std::move(vertexBuffer),
+      .indexBuffer = std::move(indexBuffer),
   });
 
   if (!info.name.empty()) {

@@ -26,10 +26,6 @@ class Renderer {
   SdlGpuTextureHandle depthTexture_;
   Uint32 depthWidth_ = 0;
   Uint32 depthHeight_ = 0;
-
-  SdlGpuSamplerHandle skyboxSampler_;
-  SdlGpuBufferHandle skyboxVbo_;
-  SdlGpuBufferHandle skyboxIbo_;
 };
 
 }  // namespace lneng
