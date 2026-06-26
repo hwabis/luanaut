@@ -16,6 +16,7 @@ add_library(lneng
   src/Renderer.cc
   src/Scene.cc
   src/SceneManager.cc
+  src/SkyboxNode.cc
   src/StbImpl.cc
 )
 
@@ -83,5 +84,3 @@ endforeach()
 
 add_custom_target(compiled_shaders DEPENDS ${ALL_COMPILED_BINARIES})
 add_dependencies(lneng compiled_shaders)
-
-file(COPY "${LNENG_ASSETS_SRC_DIR}/models" DESTINATION "${LNENG_ASSETS_BIN_DIR}")

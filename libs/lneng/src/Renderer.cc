@@ -90,12 +90,22 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
   };
   SDL_SetGPUViewport(pass, &viewport);
 
+  if (scene.skybox.has_value()) {
+    // TODO create a cube, upload it to vert/index buffers (can we do this
+    // earlier?) bind pipeline, bind texture (where to get sampler?)
+  }
+
   LightUbo lightUbo;
   for (const auto& light : scene.lights) {
     lightUbo.lights[lightUbo.lightCount] = light;
     ++lightUbo.lightCount;
   }
   SDL_PushGPUFragmentUniformData(cmdBuf, 0, &lightUbo, sizeof(lightUbo));
+
+  glm::mat4 proj = glm::perspectiveLH_ZO(
+      glm::radians(scene.camera.fovDeg),
+      static_cast<float>(width) / static_cast<float>(height),
+      scene.camera.zNear, scene.camera.zFar);
 
   SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
   for (const auto& draw : scene.draws) {
@@ -104,10 +114,6 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
       boundPipeline = draw.pipeline;
     }
 
-    glm::mat4 proj = glm::perspectiveLH_ZO(
-        glm::radians(scene.camera.fovDeg),
-        static_cast<float>(width) / static_cast<float>(height),
-        scene.camera.zNear, scene.camera.zFar);
     glm::mat4 mvp = proj * scene.camera.viewMat * draw.worldTransform;
     SDL_PushGPUVertexUniformData(cmdBuf, 0, &mvp, sizeof(mvp));
     glm::mat4 normalMatrix{

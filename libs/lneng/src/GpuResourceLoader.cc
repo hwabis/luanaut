@@ -68,14 +68,16 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
 
   SDL_GPURasterizerState rasterizerState = {};
   rasterizerState.fill_mode = SDL_GPU_FILLMODE_FILL;
-  rasterizerState.cull_mode = SDL_GPU_CULLMODE_BACK;
+  rasterizerState.cull_mode =
+      info.isSkybox ? SDL_GPU_CULLMODE_NONE : SDL_GPU_CULLMODE_BACK;
   rasterizerState.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
 
   SDL_GPUMultisampleState multisampleState = {};
   multisampleState.sample_count = SDL_GPU_SAMPLECOUNT_1;
 
   SDL_GPUDepthStencilState depthStencilState = {};
-  depthStencilState.compare_op = SDL_GPU_COMPAREOP_LESS;
+  depthStencilState.compare_op =
+      info.isSkybox ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL : SDL_GPU_COMPAREOP_LESS;
   depthStencilState.enable_depth_test = true;
   depthStencilState.enable_depth_write = true;
 
