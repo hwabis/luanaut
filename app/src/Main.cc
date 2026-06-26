@@ -3,6 +3,7 @@
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
+#include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
 
 class MyAwesomeGame : public lneng::Game {
@@ -17,6 +18,7 @@ class MyAwesomeGame : public lneng::Game {
 
     auto LoadScene() -> void override {
       auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
+
       std::filesystem::path duckPath =
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
       auto duck = assetLoader->LoadGlb(duckPath);
@@ -44,6 +46,20 @@ class MyAwesomeGame : public lneng::Game {
       auto* camera = deps_->Resolve<lneng::Camera>();
       camera->Move(clock_->now, clock_->now + 4s, camera->transform.position,
                    camera->transform.position + glm::vec3{0, 0, 300});
+
+      std::vector<std::filesystem::path> skyboxPaths = {
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_xpos.png",
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_xneg.png",
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_ypos.png",
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_yneg.png",
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_zpos.png",
+          std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_zneg.png",
+      };
+      auto skybox = assetLoader->LoadSkybox(skyboxPaths[0], skyboxPaths[1],
+                                            skyboxPaths[2], skyboxPaths[3],
+                                            skyboxPaths[4], skyboxPaths[5]);
+      auto skyboxNode = std::make_unique<lneng::SkyboxNode>(skybox);
+      AddChild(std::move(skyboxNode));
     }
   };
 };

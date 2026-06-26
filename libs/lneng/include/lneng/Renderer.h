@@ -14,7 +14,11 @@ class Renderer {
   [[nodiscard]] auto GetWindow() const -> SDL_Window*;
 
  private:
-  auto drawSkybox() -> void;
+  auto drawSkybox(SkyboxInfo skybox,
+                  SDL_GPURenderPass* pass,
+                  SDL_GPUCommandBuffer* cmdBuf,
+                  glm::mat4 proj,
+                  glm::mat4 cameraRot) -> void;
 
   SdlWindowHandle window_;
   SdlGpuDeviceHandle device_;
@@ -22,6 +26,10 @@ class Renderer {
   SdlGpuTextureHandle depthTexture_;
   Uint32 depthWidth_ = 0;
   Uint32 depthHeight_ = 0;
+
+  SdlGpuSamplerHandle skyboxSampler_;
+  SdlGpuBufferHandle skyboxVbo_;
+  SdlGpuBufferHandle skyboxIbo_;
 };
 
 }  // namespace lneng

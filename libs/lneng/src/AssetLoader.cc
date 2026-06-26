@@ -112,6 +112,25 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
   return result;
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+auto AssetLoader::LoadSkybox(const std::filesystem::path& xPosTexture,
+                             const std::filesystem::path& xNegTexture,
+                             const std::filesystem::path& yPosTexture,
+                             const std::filesystem::path& yNegTexture,
+                             const std::filesystem::path& zPosTexture,
+                             const std::filesystem::path& zNegTexture)
+    -> SkyboxCreateInfo {
+  return {
+      .textureXPos = decodeImageFile(xPosTexture),
+      .textureXNeg = decodeImageFile(xNegTexture),
+      .textureYPos = decodeImageFile(yPosTexture),
+      .textureYNeg = decodeImageFile(yNegTexture),
+      .textureZPos = decodeImageFile(zPosTexture),
+      .textureZNeg = decodeImageFile(zNegTexture),
+      .name = "",  // todo
+  };
+}
+
 auto AssetLoader::decodeImageBytes(const std::byte* data, size_t size)
     -> Texture {
   int width;
@@ -133,6 +152,27 @@ auto AssetLoader::decodeImageBytes(const std::byte* data, size_t size)
 
   stbi_image_free(pixels);
 
+  return texture;
+}
+
+auto AssetLoader::decodeImageFile(const std::filesystem::path& path)
+    -> Texture {
+  int width;
+  int height;
+  int channels;
+  unsigned char* pixels =
+      stbi_load(path.string().c_str(), &width, &height, &channels, 4);
+  if (pixels == nullptr) {
+    throw std::runtime_error("stbi load failed: " + path.string());
+  }
+
+  Texture texture;
+  texture.width = static_cast<uint32_t>(width);
+  texture.height = static_cast<uint32_t>(height);
+  size_t totalBytes = static_cast<size_t>(width) * height * 4;
+  texture.pixelsRgba8.assign(pixels, pixels + totalBytes);
+
+  stbi_image_free(pixels);
   return texture;
 }
 

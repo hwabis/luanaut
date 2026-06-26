@@ -175,7 +175,6 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
   samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
   samplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-  samplerInfo.max_lod = 1000;
   SDL_GPUSampler* defaultSampler = SDL_CreateGPUSampler(device_, &samplerInfo);
   std::vector<SdlGpuSamplerHandle> samplers;
   samplers.emplace_back(device_, defaultSampler);

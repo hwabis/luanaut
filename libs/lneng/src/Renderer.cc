@@ -11,6 +11,16 @@ namespace lneng {
 constexpr int initialWidth = 800;
 constexpr int initialHeight = 600;
 
+const std::vector<glm::vec3> cubeVerts = {
+    {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
+    {-1, -1, 1},  {1, -1, 1},  {1, 1, 1},  {-1, 1, 1},
+};
+const std::vector<uint32_t> cubeIndices = {
+    0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4,  // front, back
+    0, 4, 7, 7, 3, 0, 1, 5, 6, 6, 2, 1,  // left, right
+    3, 2, 6, 6, 7, 3, 0, 1, 5, 5, 4, 0,  // top, bottom
+};
+
 Renderer::Renderer()
     : window_(SDL_CreateWindow("lneng",
                                initialWidth,
@@ -26,6 +36,30 @@ Renderer::Renderer()
   }
 
   SDL_ClaimWindowForGPUDevice(device_, window_);
+
+  SDL_GPUSamplerCreateInfo skyboxSamplerInfo{};
+  skyboxSamplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+  skyboxSamplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+  skyboxSamplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  skyboxSamplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  skyboxSamplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+  skyboxSampler_ = {device_, SDL_CreateGPUSampler(device_, &skyboxSamplerInfo)};
+
+  SDL_GPUBufferCreateInfo skyboxVboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
+      .size = static_cast<Uint32>(cubeVerts.size() * sizeof(glm::vec3)),
+      .props = 0,
+  };
+  SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &skyboxVboInfo);
+  skyboxVbo_ = {device_, vbo};
+
+  SDL_GPUBufferCreateInfo skyboxIboInfo = {
+      .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+      .size = static_cast<Uint32>(cubeIndices.size() * sizeof(uint32_t)),
+      .props = 0,
+  };
+  SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &skyboxIboInfo);
+  skyboxIbo_ = {device_, ibo};
 }
 
 auto Renderer::Draw(const SceneInfo& scene) -> void {
@@ -90,8 +124,14 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
   };
   SDL_SetGPUViewport(pass, &viewport);
 
+  const glm::mat4 proj = glm::perspectiveLH_ZO(
+      glm::radians(scene.camera.fovDeg),
+      static_cast<float>(width) / static_cast<float>(height),
+      scene.camera.zNear, scene.camera.zFar);
+
   if (scene.skybox.has_value()) {
-    drawSkybox();
+    glm::mat4 cameraRot = glm::mat4(glm::mat3(scene.camera.viewMat));
+    drawSkybox(*scene.skybox, pass, cmdBuf, proj, cameraRot);
   }
 
   LightUbo lightUbo;
@@ -100,11 +140,6 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
     ++lightUbo.lightCount;
   }
   SDL_PushGPUFragmentUniformData(cmdBuf, 0, &lightUbo, sizeof(lightUbo));
-
-  glm::mat4 proj = glm::perspectiveLH_ZO(
-      glm::radians(scene.camera.fovDeg),
-      static_cast<float>(width) / static_cast<float>(height),
-      scene.camera.zNear, scene.camera.zFar);
 
   SdlGpuGraphicsPipelineHandle* boundPipeline = nullptr;
   for (const auto& draw : scene.draws) {
@@ -147,9 +182,29 @@ auto Renderer::GetWindow() const -> SDL_Window* {
   return window_;
 }
 
-auto Renderer::drawSkybox() -> void {
-  // TODO create a cube, upload it to vert/index buffers (can we do this
-  // earlier?) bind pipeline, bind texture (where to get sampler?)
+auto Renderer::drawSkybox(SkyboxInfo skybox,
+                          SDL_GPURenderPass* pass,
+                          SDL_GPUCommandBuffer* cmdBuf,
+                          glm::mat4 proj,
+                          glm::mat4 cameraRot) -> void {
+  SDL_BindGPUGraphicsPipeline(pass, *skybox.pipeline);
+
+  glm::mat4 viewProj = proj * cameraRot;
+  SDL_PushGPUVertexUniformData(cmdBuf, 0, &viewProj, sizeof(viewProj));
+
+  SDL_GPUTextureSamplerBinding texBind{
+      .texture = skybox.skybox->texture,
+      .sampler = skyboxSampler_,
+  };
+  SDL_BindGPUFragmentSamplers(pass, 0, &texBind, 1);
+
+  SDL_GPUBufferBinding vbo{.buffer = skyboxVbo_, .offset = 0};
+  SDL_BindGPUVertexBuffers(pass, 0, &vbo, 1);
+  SDL_GPUBufferBinding ibo{.buffer = skyboxIbo_, .offset = 0};
+  SDL_BindGPUIndexBuffer(pass, &ibo, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+  constexpr int skyboxIndexCount = 36;
+  SDL_DrawGPUIndexedPrimitives(pass, skyboxIndexCount, 1, 0, 0, 0);
 }
 
 }  // namespace lneng
