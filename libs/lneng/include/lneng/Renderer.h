@@ -14,6 +14,8 @@ class Renderer {
   [[nodiscard]] auto GetWindow() const -> SDL_Window*;
 
  private:
+  auto drawSkybox() -> void;
+
   SdlWindowHandle window_;
   SdlGpuDeviceHandle device_;
 

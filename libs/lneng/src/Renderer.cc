@@ -91,8 +91,7 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
   SDL_SetGPUViewport(pass, &viewport);
 
   if (scene.skybox.has_value()) {
-    // TODO create a cube, upload it to vert/index buffers (can we do this
-    // earlier?) bind pipeline, bind texture (where to get sampler?)
+    drawSkybox();
   }
 
   LightUbo lightUbo;
@@ -146,6 +145,11 @@ auto Renderer::GetDevice() const -> SDL_GPUDevice* {
 
 auto Renderer::GetWindow() const -> SDL_Window* {
   return window_;
+}
+
+auto Renderer::drawSkybox() -> void {
+  // TODO create a cube, upload it to vert/index buffers (can we do this
+  // earlier?) bind pipeline, bind texture (where to get sampler?)
 }
 
 }  // namespace lneng

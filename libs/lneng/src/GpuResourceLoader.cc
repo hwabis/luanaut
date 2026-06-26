@@ -79,7 +79,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
   depthStencilState.compare_op =
       info.isSkybox ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL : SDL_GPU_COMPAREOP_LESS;
   depthStencilState.enable_depth_test = true;
-  depthStencilState.enable_depth_write = true;
+  depthStencilState.enable_depth_write = !info.isSkybox;
 
   SDL_GPUColorTargetDescription colorTargetDesc{
       .format = SDL_GetGPUSwapchainTextureFormat(device_, window_),
