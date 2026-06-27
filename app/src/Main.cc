@@ -17,35 +17,37 @@ class MyAwesomeGame : public lneng::Game {
         : Scene(lneng::Transform{.position = {0, 100, -300}}, 60) {}
 
     auto LoadScene() -> void override {
+      // todo come up with a way to have timed/scheduled scene node
+      // additions/removals so we dont have to hacky scale to 0 lol
+
       auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
 
       std::filesystem::path duckPath =
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
       auto duck = assetLoader->LoadGlb(duckPath);
       auto duckNode = std::make_unique<lneng::ModelNode>(duck);
-      auto* duckNodePtr = duckNode.get();
+      // auto* duckNodePtr = duckNode.get();
       AddChild(std::move(duckNode));
 
       using namespace std::chrono_literals;
-      // Annoying sequencing right now but it works!!
-      duckNodePtr->Rotate(
-          clock_->now, clock_->now + 3s, duckNodePtr->transform.rotation,
-          duckNodePtr->transform.rotation *
-              glm::angleAxis(glm::radians(179.9F), glm::vec3(0, 1, 0)));
-      duckNodePtr->Rotate(
-          clock_->now + 3s, clock_->now + 4s,
-          duckNodePtr->transform.rotation *
-              glm::angleAxis(glm::radians(180.1F), glm::vec3(0, 1, 0)),
-          duckNodePtr->transform.rotation);
+      // duckNodePtr->Rotate(
+      //     clock_->now, clock_->now + 3s, duckNodePtr->GetTransform().rotation,
+      //     duckNodePtr->GetTransform().rotation *
+      //         glm::angleAxis(glm::radians(179.9F), glm::vec3(0, 1, 0)));
+      // duckNodePtr->Rotate(
+      //     clock_->now + 3s, clock_->now + 4s,
+      //     duckNodePtr->GetTransform().rotation *
+      //         glm::angleAxis(glm::radians(180.1F), glm::vec3(0, 1, 0)),
+      //     duckNodePtr->GetTransform().rotation);
 
       AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
           .direction = {0, 0, 1},
           .color = {1, 1, 1},
       }));
 
-      auto* camera = deps_->Resolve<lneng::Camera>();
-      camera->Move(clock_->now, clock_->now + 4s, camera->transform.position,
-                   camera->transform.position + glm::vec3{0, 0, 300});
+      // auto* camera = deps_->Resolve<lneng::Camera>();
+      // camera->Move(clock_->now, clock_->now + 4s, camera->GetTransform().position,
+      //              camera->GetTransform().position + glm::vec3{0, 0, 300});
 
       std::vector<std::filesystem::path> skyboxPaths = {
           std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_xpos.png",

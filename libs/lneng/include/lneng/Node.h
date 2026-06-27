@@ -7,11 +7,11 @@
 #include "DependencyContainer.h"
 #include "SceneInfo.h"
 #include "Transform.h"
-#include "Tween.h"
+#include "Transformable.h"
 
 namespace lneng {
 
-class Node {
+class Node : public Transformable {
  public:
   Node() = default;
   virtual ~Node() = default;
@@ -21,7 +21,7 @@ class Node {
   Node(Node&&) = delete;
   auto operator=(Node&&) -> Node& = delete;
 
-  Transform transform{};
+  [[nodiscard]] auto GetTransform() -> Transform& override;
 
   [[nodiscard]] auto GetParent() const -> Node*;
   [[nodiscard]] auto GetWorldTransform() const -> glm::mat4x4;
@@ -32,19 +32,6 @@ class Node {
 
   auto Destroy() -> void;
   [[nodiscard]] auto IsAlive() const -> bool;
-
-  auto Move(std::chrono::steady_clock::time_point startTime,
-            std::chrono::steady_clock::time_point endTime,
-            glm::vec3 startVal,
-            glm::vec3 endVal) -> void;
-  auto Scale(std::chrono::steady_clock::time_point startTime,
-             std::chrono::steady_clock::time_point endTime,
-             glm::vec3 startVal,
-             glm::vec3 endVal) -> void;
-  auto Rotate(std::chrono::steady_clock::time_point startTime,
-              std::chrono::steady_clock::time_point endTime,
-              glm::quat startVal,
-              glm::quat endVal) -> void;
 
  protected:
   auto UpdateSubTree() -> void;
@@ -62,7 +49,7 @@ class Node {
   Clock* clock_ = nullptr;
 
  private:
-  std::vector<std::unique_ptr<ATween>> tweens_;
+  Transform transform;
   glm::mat4x4 worldTransform_{1.0F};
   Node* parent_ = nullptr;
   std::vector<std::unique_ptr<Node>> children_;

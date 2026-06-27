@@ -18,6 +18,7 @@ add_library(lneng
   src/SceneManager.cc
   src/SkyboxNode.cc
   src/StbImpl.cc
+  src/Transformable.cc
 )
 
 set_target_defaults(lneng)

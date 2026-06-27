@@ -10,7 +10,7 @@ auto Scene::Load() -> void {
   auto cameraNode = std::make_unique<lneng::Camera>(cameraFov_);
   auto* cameraNodePtr = cameraNode.get();
   AddChild(std::move(cameraNode));
-  cameraNodePtr->transform = cameraStart_;
+  cameraNodePtr->GetTransform() = cameraStart_;
   deps_->Cache(cameraNodePtr);
 
   LoadScene();

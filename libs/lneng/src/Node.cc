@@ -6,6 +6,10 @@ auto Node::Destroy() -> void {
   isAlive_ = false;
 }
 
+auto Node::GetTransform() -> Transform& {
+  return transform;
+}
+
 auto Node::GetParent() const -> Node* {
   return parent_;
 }
@@ -19,14 +23,7 @@ auto Node::UpdateSubTree() -> void {
                         ? transform.ToMatrix()
                         : parent_->worldTransform_ * transform.ToMatrix();
 
-  auto now = clock_->now;
-  for (auto& tween : tweens_) {
-    if (tween->IsActive(now) || tween->IsComplete(now)) {
-      tween->Apply(now);
-    }
-  }
-  std::erase_if(tweens_,
-                [now](const auto& tween) { return tween->IsComplete(now); });
+  UpdateTransforms(clock_->now);
 
   Update();
   std::erase_if(children_, [](const auto& child) { return !child->isAlive_; });
@@ -73,33 +70,6 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
 
 auto Node::IsAlive() const -> bool {
   return isAlive_;
-}
-
-auto Node::Move(std::chrono::steady_clock::time_point startTime,
-                std::chrono::steady_clock::time_point endTime,
-                glm::vec3 startVal,
-                glm::vec3 endVal) -> void {
-  tweens_.push_back(std::make_unique<Vec3Tween>(
-      startTime, endTime, startVal, endVal,
-      [this](glm::vec3 current) { transform.position = current; }));
-}
-
-auto Node::Scale(std::chrono::steady_clock::time_point startTime,
-                 std::chrono::steady_clock::time_point endTime,
-                 glm::vec3 startVal,
-                 glm::vec3 endVal) -> void {
-  tweens_.push_back(std::make_unique<Vec3Tween>(
-      startTime, endTime, startVal, endVal,
-      [this](glm::vec3 current) { transform.scale = current; }));
-}
-
-auto Node::Rotate(std::chrono::steady_clock::time_point startTime,
-                  std::chrono::steady_clock::time_point endTime,
-                  glm::quat startVal,
-                  glm::quat endVal) -> void {
-  tweens_.push_back(std::make_unique<QuatTween>(
-      startTime, endTime, startVal, endVal,
-      [this](glm::quat current) { transform.rotation = current; }));
 }
 
 auto Node::Load() -> void {}
