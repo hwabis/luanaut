@@ -21,6 +21,7 @@ class Node : public Transformable {
   Node(Node&&) = delete;
   auto operator=(Node&&) -> Node& = delete;
 
+  [[nodiscard]] auto GetNow() -> std::chrono::steady_clock::time_point override;
   [[nodiscard]] auto GetTransform() -> Transform& override;
 
   [[nodiscard]] auto GetParent() const -> Node*;

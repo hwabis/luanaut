@@ -17,9 +17,6 @@ class MyAwesomeGame : public lneng::Game {
         : Scene(lneng::Transform{.position = {0, 100, -300}}, 60) {}
 
     auto LoadScene() -> void override {
-      // todo come up with a way to have timed/scheduled scene node
-      // additions/removals so we dont have to hacky scale to 0 lol
-
       auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
 
       std::filesystem::path duckPath =
@@ -31,7 +28,8 @@ class MyAwesomeGame : public lneng::Game {
 
       using namespace std::chrono_literals;
       // duckNodePtr->Rotate(
-      //     clock_->now, clock_->now + 3s, duckNodePtr->GetTransform().rotation,
+      //     clock_->now, clock_->now + 3s,
+      //     duckNodePtr->GetTransform().rotation,
       //     duckNodePtr->GetTransform().rotation *
       //         glm::angleAxis(glm::radians(179.9F), glm::vec3(0, 1, 0)));
       // duckNodePtr->Rotate(
@@ -46,7 +44,8 @@ class MyAwesomeGame : public lneng::Game {
       }));
 
       // auto* camera = deps_->Resolve<lneng::Camera>();
-      // camera->Move(clock_->now, clock_->now + 4s, camera->GetTransform().position,
+      // camera->Move(clock_->now, clock_->now + 4s,
+      // camera->GetTransform().position,
       //              camera->GetTransform().position + glm::vec3{0, 0, 300});
 
       std::vector<std::filesystem::path> skyboxPaths = {

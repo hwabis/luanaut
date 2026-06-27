@@ -6,6 +6,10 @@ auto Node::Destroy() -> void {
   isAlive_ = false;
 }
 
+auto Node::GetNow() -> std::chrono::steady_clock::time_point {
+  return clock_->now;
+}
+
 auto Node::GetTransform() -> Transform& {
   return transform;
 }
