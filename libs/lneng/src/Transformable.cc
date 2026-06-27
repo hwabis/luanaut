@@ -57,6 +57,14 @@ auto Transformable::RotateTo(glm::quat target,
   return *this;
 }
 
+auto Transformable::RotateTo(float degrees,
+                             glm::vec3 axis,
+                             std::chrono::milliseconds duration)
+    -> Transformable& {
+  return RotateTo(glm::angleAxis(glm::radians(degrees), glm::normalize(axis)),
+                  duration);
+}
+
 auto Transformable::Delay(std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();

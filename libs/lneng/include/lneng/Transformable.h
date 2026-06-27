@@ -21,6 +21,9 @@ class Transformable {
       -> Transformable&;
   auto RotateTo(glm::quat target, std::chrono::milliseconds duration)
       -> Transformable&;
+  auto RotateTo(float degrees,
+                glm::vec3 axis,
+                std::chrono::milliseconds duration) -> Transformable&;
   auto Delay(std::chrono::milliseconds duration) -> Transformable&;
   auto Then() -> Transformable&;
 
