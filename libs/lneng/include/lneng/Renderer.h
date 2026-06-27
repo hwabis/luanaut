@@ -14,11 +14,11 @@ class Renderer {
   [[nodiscard]] auto GetWindow() const -> SDL_Window*;
 
  private:
-  auto drawSkybox(SkyboxInfo skybox,
-                  SDL_GPURenderPass* pass,
-                  SDL_GPUCommandBuffer* cmdBuf,
-                  glm::mat4 proj,
-                  glm::mat4 cameraRot) -> void;
+  static auto drawSkybox(SkyboxInfo skybox,
+                         SDL_GPURenderPass* pass,
+                         SDL_GPUCommandBuffer* cmdBuf,
+                         glm::mat4 proj,
+                         glm::mat4 cameraRot) -> void;
 
   SdlWindowHandle window_;
   SdlGpuDeviceHandle device_;

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <stdexcept>
 #include "lneng/SdlHandles.h"
+#include "lneng/SkyboxVertex.h"
 
 namespace lneng {
 
@@ -63,7 +64,9 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
 
   SDL_GPUVertexBufferDescription vertDesc = {
       .slot = 0,
-      .pitch = sizeof(Vertex),
+      // smelly
+      .pitch = static_cast<Uint32>(info.isSkybox ? sizeof(SkyboxVertex)
+                                                 : sizeof(Vertex)),
       .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
       .instance_step_rate = 0,
   };
