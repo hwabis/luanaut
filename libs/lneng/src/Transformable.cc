@@ -21,33 +21,52 @@ auto Transformable::MoveTo(glm::vec3 target, std::chrono::milliseconds duration)
   return *this;
 }
 
-auto Transformable::ScaleTo(glm::vec3 /*target*/,
-                            std::chrono::milliseconds /*duration*/)
+auto Transformable::ScaleTo(glm::vec3 target,
+                            std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();
+  if (!latestScale_.has_value()) {
+    latestScale_ = GetTransform().scale;
+  }
+
+  tweens_.push_back(std::make_unique<Vec3Tween>(
+      *cursor_, *cursor_ + duration, *latestScale_, target,
+      [this](glm::vec3 current) { GetTransform().scale = current; }));
+
+  latestScale_ = target;
+  lastGroupDuration_ = std::max(duration, lastGroupDuration_);
 
   return *this;
 }
 
-auto Transformable::RotateTo(glm::quat /*target*/,
-                             std::chrono::milliseconds /*duration*/)
+auto Transformable::RotateTo(glm::quat target,
+                             std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();
+  if (!latestRot_.has_value()) {
+    latestRot_ = GetTransform().rotation;
+  }
+
+  tweens_.push_back(std::make_unique<QuatTween>(
+      *cursor_, *cursor_ + duration, *latestRot_, target,
+      [this](glm::quat current) { GetTransform().rotation = current; }));
+
+  latestRot_ = target;
+  lastGroupDuration_ = std::max(duration, lastGroupDuration_);
 
   return *this;
 }
 
-auto Transformable::Delay(std::chrono::milliseconds /*duration*/)
+auto Transformable::Delay(std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();
-
+  *cursor_ += lastGroupDuration_ + duration;
+  lastGroupDuration_ = 0ms;
   return *this;
 }
 
 auto Transformable::Then() -> Transformable& {
-  *cursor_ += lastGroupDuration_;
-  lastGroupDuration_ = 0ms;
-  return *this;
+  return Delay(0ms);
 }
 
 auto Transformable::UpdateTransforms(std::chrono::steady_clock::time_point now)
