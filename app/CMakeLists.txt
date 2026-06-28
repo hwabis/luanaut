@@ -16,7 +16,13 @@ target_link_libraries(luanaut
 set(APP_ASSETS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(APP_ASSETS_BIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets")
 target_compile_definitions(luanaut PRIVATE
-    APP_ASSETS_BIN_DIR="${APP_ASSETS_BIN_DIR}"
+  APP_ASSETS_BIN_DIR="${APP_ASSETS_BIN_DIR}"
 )
 
-file(COPY "${APP_ASSETS_SRC_DIR}/models" DESTINATION "${APP_ASSETS_BIN_DIR}")
+add_custom_target(copy_app_assets ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${APP_ASSETS_SRC_DIR}/models"
+    "${APP_ASSETS_BIN_DIR}/models"
+  COMMENT "Copying runtime models to binary directory..."
+)
+add_dependencies(luanaut copy_app_assets)

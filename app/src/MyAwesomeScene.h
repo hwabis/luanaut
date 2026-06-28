@@ -45,12 +45,12 @@ class MyAwesomeScene : public lneng::Scene {
         .RotateTo(90.0F, {-1, 0, 0}, 2s);
 
     std::vector<std::filesystem::path> skyboxPaths = {
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_xpos.png",
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_xneg.png",
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_ypos.png",
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_yneg.png",
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_zpos.png",
-        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "sky_zneg.png",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyRT.tga",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyLF.tga",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyUP.tga",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyDN.tga",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyFT.tga",
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyBK.tga",
     };
     auto skybox =
         assetLoader->LoadSkybox(skyboxPaths[0], skyboxPaths[1], skyboxPaths[2],
