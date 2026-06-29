@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <glm/glm.hpp>
+#include "Easings.h"
 #include "Transform.h"
 #include "Tween.h"
 
@@ -15,15 +16,23 @@ class Transformable {
   // todo come up with a way to have timed/scheduled scene node
   // additions/removals so we dont have to hacky scale to 0 lol
 
-  auto MoveTo(glm::vec3 target, std::chrono::milliseconds duration)
+  auto MoveTo(glm::vec3 target,
+              std::chrono::milliseconds duration,
+              std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
-  auto ScaleTo(glm::vec3 target, std::chrono::milliseconds duration)
+  auto ScaleTo(glm::vec3 target,
+               std::chrono::milliseconds duration,
+               std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
-  auto RotateTo(glm::quat target, std::chrono::milliseconds duration)
+  auto RotateTo(glm::quat target,
+                std::chrono::milliseconds duration,
+                std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
   auto RotateTo(float degrees,
                 glm::vec3 axis,
-                std::chrono::milliseconds duration) -> Transformable&;
+                std::chrono::milliseconds duration,
+                std::function<double(double)> easingFunc = easeLinear)
+      -> Transformable&;
   auto Delay(std::chrono::milliseconds duration) -> Transformable&;
   auto Then() -> Transformable&;
 

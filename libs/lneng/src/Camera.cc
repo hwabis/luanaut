@@ -3,6 +3,8 @@
 
 namespace lneng {
 
+constexpr int defaultZFar = 1000;
+
 Camera::Camera(float fovDeg) : fovDeg_(fovDeg) {}
 
 auto Camera::Draw(SceneInfo& out) -> void {
@@ -10,7 +12,7 @@ auto Camera::Draw(SceneInfo& out) -> void {
       .viewMat = glm::inverse(GetWorldTransform()),
       .fovDeg = fovDeg_,
       .zNear = 1,
-      .zFar = 1000,
+      .zFar = defaultZFar,
   };
 }
 

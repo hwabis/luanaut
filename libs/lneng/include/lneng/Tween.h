@@ -33,16 +33,17 @@ class ATween {
 template <typename T>
 class Tween : public ATween {
  public:
-  // todo  easing
   Tween(std::chrono::steady_clock::time_point startTime,
         std::chrono::steady_clock::time_point endTime,
         T startValue,
         T endValue,
-        std::function<void(T)> applyFunc)
+        std::function<void(T)> applyFunc,
+        std::function<double(double)> easingFunc)
       : ATween(startTime, endTime),
         startValue_(startValue),
         endValue_(endValue),
-        applyFunc_(applyFunc) {}
+        applyFunc_(std::move(applyFunc)),
+        easingFunc_(std::move(easingFunc)) {}
 
   auto Apply(std::chrono::steady_clock::time_point now) -> void override {
     if (now <= startTime_) {
@@ -59,8 +60,7 @@ class Tween : public ATween {
 
     double progress =
         static_cast<double>(elapsed) / static_cast<double>(totalDuration);
-
-    // todo how handle easing? and apparently rotation need slerp?
+    progress = easingFunc_(progress);
     applyFunc_(Interpolate(startValue_, endValue_, progress));
   }
 
@@ -71,6 +71,7 @@ class Tween : public ATween {
   T startValue_;
   T endValue_;
   std::function<void(T)> applyFunc_;
+  std::function<double(double)> easingFunc_;
 };
 
 class Vec3Tween : public Tween<glm::vec3> {

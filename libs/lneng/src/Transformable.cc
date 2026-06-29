@@ -4,7 +4,9 @@ namespace lneng {
 
 using namespace std::chrono_literals;
 
-auto Transformable::MoveTo(glm::vec3 target, std::chrono::milliseconds duration)
+auto Transformable::MoveTo(glm::vec3 target,
+                           std::chrono::milliseconds duration,
+                           std::function<double(double)> easingFunc)
     -> Transformable& {
   ensureCursor();
   if (!latestPos_.has_value()) {
@@ -13,7 +15,8 @@ auto Transformable::MoveTo(glm::vec3 target, std::chrono::milliseconds duration)
 
   tweens_.push_back(std::make_unique<Vec3Tween>(
       *cursor_, *cursor_ + duration, *latestPos_, target,
-      [this](glm::vec3 current) { GetTransform().position = current; }));
+      [this](glm::vec3 current) { GetTransform().position = current; },
+      std::move(easingFunc)));
 
   latestPos_ = target;
   lastGroupDuration_ = std::max(duration, lastGroupDuration_);
@@ -22,7 +25,8 @@ auto Transformable::MoveTo(glm::vec3 target, std::chrono::milliseconds duration)
 }
 
 auto Transformable::ScaleTo(glm::vec3 target,
-                            std::chrono::milliseconds duration)
+                            std::chrono::milliseconds duration,
+                            std::function<double(double)> easingFunc)
     -> Transformable& {
   ensureCursor();
   if (!latestScale_.has_value()) {
@@ -31,7 +35,8 @@ auto Transformable::ScaleTo(glm::vec3 target,
 
   tweens_.push_back(std::make_unique<Vec3Tween>(
       *cursor_, *cursor_ + duration, *latestScale_, target,
-      [this](glm::vec3 current) { GetTransform().scale = current; }));
+      [this](glm::vec3 current) { GetTransform().scale = current; },
+      std::move(easingFunc)));
 
   latestScale_ = target;
   lastGroupDuration_ = std::max(duration, lastGroupDuration_);
@@ -40,7 +45,8 @@ auto Transformable::ScaleTo(glm::vec3 target,
 }
 
 auto Transformable::RotateTo(glm::quat target,
-                             std::chrono::milliseconds duration)
+                             std::chrono::milliseconds duration,
+                             std::function<double(double)> easingFunc)
     -> Transformable& {
   ensureCursor();
   if (!latestRot_.has_value()) {
@@ -49,7 +55,8 @@ auto Transformable::RotateTo(glm::quat target,
 
   tweens_.push_back(std::make_unique<QuatTween>(
       *cursor_, *cursor_ + duration, *latestRot_, target,
-      [this](glm::quat current) { GetTransform().rotation = current; }));
+      [this](glm::quat current) { GetTransform().rotation = current; },
+      std::move(easingFunc)));
 
   latestRot_ = target;
   lastGroupDuration_ = std::max(duration, lastGroupDuration_);
@@ -59,10 +66,11 @@ auto Transformable::RotateTo(glm::quat target,
 
 auto Transformable::RotateTo(float degrees,
                              glm::vec3 axis,
-                             std::chrono::milliseconds duration)
+                             std::chrono::milliseconds duration,
+                             std::function<double(double)> easingFunc)
     -> Transformable& {
   return RotateTo(glm::angleAxis(glm::radians(degrees), glm::normalize(axis)),
-                  duration);
+                  duration, std::move(easingFunc));
 }
 
 auto Transformable::Delay(std::chrono::milliseconds duration)

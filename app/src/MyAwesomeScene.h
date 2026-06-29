@@ -25,7 +25,7 @@ class MyAwesomeScene : public lneng::Scene {
     auto* duckNodePtr = duckNode.get();
     AddChild(std::move(duckNode));
 
-    duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s)
+    duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s, lneng::easeOutQuad)
         .ScaleTo({0.5F, 0.5F, 0.5F}, 3s)
         .Delay(1s)
         .RotateTo(180.0F, glm::vec3(1, 0, 0), 1s)
@@ -42,7 +42,7 @@ class MyAwesomeScene : public lneng::Scene {
         .Then()
         .MoveTo({0, 100, -200}, 3s)
         .Then()
-        .RotateTo(90.0F, {-1, 0, 0}, 2s);
+        .RotateTo(90.0F, {-1, 0, 0}, 2s, lneng::easeInQuad);
 
     std::vector<std::filesystem::path> skyboxPaths = {
         std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "skyRT.tga",
