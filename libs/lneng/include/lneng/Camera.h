@@ -12,7 +12,10 @@ class Camera : public Node {
   auto Draw(SceneInfo& out) -> void override;
 
  private:
+  auto applyShake(glm::mat4 transform) -> glm::mat4;
+
   float fovDeg_{};
+  float shakeTime_{};
 };
 
 }  // namespace lneng
