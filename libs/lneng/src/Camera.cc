@@ -25,7 +25,7 @@ auto Camera::Draw(SceneInfo& out) -> void {
 }
 
 auto Camera::SetShake(bool shake) -> void {
-  ScheduleTask([this, shake]() { shake_ = shake; });
+  shake_ = shake;
 }
 
 auto Camera::applyShake(glm::mat4 transform) -> glm::mat4 {

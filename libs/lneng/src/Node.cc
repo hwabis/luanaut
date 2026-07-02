@@ -101,6 +101,7 @@ auto Node::runScheduledTasks() -> void {
       task.fired = true;
     }
   }
+  std::erase_if(scheduledTasks_, [](const auto& task) { return task.fired; });
 }
 
 }  // namespace lneng
