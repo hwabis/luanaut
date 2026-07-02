@@ -63,9 +63,15 @@ class MyAwesomeScene : public lneng::Scene {
 
     ScheduleTask(
         [camera]() {
+          camera->GetTransform().rotation = glm::identity<glm::quat>();
+        },
+        6500ms);
+
+    ScheduleTask(
+        [camera]() {
           camera->RotateTo(-90.0F, {-1, 0, 0}, 2s, lneng::easeInQuad);
         },
-        6s);
+        7s);
   }
 };
 // NOLINTEND(readability-magic-numbers)

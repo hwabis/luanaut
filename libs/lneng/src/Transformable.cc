@@ -19,7 +19,7 @@ auto Transformable::MoveTo(glm::vec3 target,
       std::move(easingFunc)));
 
   latestPos_ = target;
-  lastGroupDuration_ = std::max(duration, lastGroupDuration_);
+  currentGroupDuration_ = std::max(duration, currentGroupDuration_);
 
   return *this;
 }
@@ -39,7 +39,7 @@ auto Transformable::ScaleTo(glm::vec3 target,
       std::move(easingFunc)));
 
   latestScale_ = target;
-  lastGroupDuration_ = std::max(duration, lastGroupDuration_);
+  currentGroupDuration_ = std::max(duration, currentGroupDuration_);
 
   return *this;
 }
@@ -59,7 +59,7 @@ auto Transformable::RotateTo(glm::quat target,
       std::move(easingFunc)));
 
   latestRot_ = target;
-  lastGroupDuration_ = std::max(duration, lastGroupDuration_);
+  currentGroupDuration_ = std::max(duration, currentGroupDuration_);
 
   return *this;
 }
@@ -76,8 +76,8 @@ auto Transformable::RotateTo(float degrees,
 auto Transformable::Delay(std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();
-  *cursor_ += lastGroupDuration_ + duration;
-  lastGroupDuration_ = 0ms;
+  *cursor_ += currentGroupDuration_ + duration;
+  currentGroupDuration_ = 0ms;
   return *this;
 }
 
@@ -100,7 +100,10 @@ auto Transformable::ensureCursor() -> void {
   auto now = GetNow();
   if (!cursor_.has_value() || *cursor_ < now) {
     cursor_ = now;
-    lastGroupDuration_ = 0ms;
+    currentGroupDuration_ = 0ms;
+    latestPos_.reset();
+    latestScale_.reset();
+    latestRot_.reset();
   }
 }
 

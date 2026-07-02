@@ -40,7 +40,7 @@ class Transformable {
 
   std::vector<std::unique_ptr<ATween>> tweens_;
   std::optional<std::chrono::steady_clock::time_point> cursor_;
-  std::chrono::milliseconds lastGroupDuration_{};
+  std::chrono::milliseconds currentGroupDuration_{};
 
   std::optional<glm::vec3> latestPos_;
   std::optional<glm::vec3> latestScale_;
