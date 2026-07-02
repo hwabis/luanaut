@@ -65,7 +65,7 @@ class MyAwesomeScene : public lneng::Scene {
         [camera]() {
           camera->RotateTo(-90.0F, {-1, 0, 0}, 2s, lneng::easeInQuad);
         },
-        7s);
+        6s);
   }
 };
 // NOLINTEND(readability-magic-numbers)

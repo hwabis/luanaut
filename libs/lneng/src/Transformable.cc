@@ -97,8 +97,10 @@ auto Transformable::UpdateTransforms(std::chrono::steady_clock::time_point now)
 }
 
 auto Transformable::ensureCursor() -> void {
-  if (!cursor_.has_value()) {
-    cursor_ = GetNow();
+  auto now = GetNow();
+  if (!cursor_.has_value() || *cursor_ < now) {
+    cursor_ = now;
+    lastGroupDuration_ = 0ms;
   }
 }
 
