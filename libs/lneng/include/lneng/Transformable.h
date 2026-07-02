@@ -13,9 +13,6 @@ class Transformable {
   [[nodiscard]] virtual auto GetNow()
       -> std::chrono::steady_clock::time_point = 0;
 
-  // todo come up with a way to have timed/scheduled scene node
-  // additions/removals so we dont have to hacky scale to 0 lol
-
   auto MoveTo(glm::vec3 target,
               std::chrono::milliseconds duration,
               std::function<double(double)> easingFunc = easeLinear)

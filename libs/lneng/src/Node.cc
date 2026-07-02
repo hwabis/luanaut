@@ -28,6 +28,7 @@ auto Node::UpdateSubTree() -> void {
                         : parent_->worldTransform_ * transform.ToMatrix();
 
   UpdateTransforms(clock_->now);
+  runScheduledTasks();
 
   Update();
   std::erase_if(children_, [](const auto& child) { return !child->isAlive_; });
@@ -76,6 +77,13 @@ auto Node::IsAlive() const -> bool {
   return isAlive_;
 }
 
+auto Node::ScheduleTask(std::function<void()> task,
+                        std::chrono::milliseconds delay) -> void {
+  auto when = clock_->now + delay;
+  scheduledTasks_.push_back(
+      {.startTime = when, .task = std::move(task), .fired = false});
+}
+
 auto Node::Load() -> void {}
 
 auto Node::Update() -> void {}
@@ -84,6 +92,15 @@ auto Node::Draw(SceneInfo& /*out*/) -> void {}
 
 auto Node::HandleEvent(const SDL_Event& /*event*/) -> bool {
   return false;
+}
+
+auto Node::runScheduledTasks() -> void {
+  for (auto& task : scheduledTasks_) {
+    if (!task.fired && clock_->now >= task.startTime) {
+      task.task();
+      task.fired = true;
+    }
+  }
 }
 
 }  // namespace lneng

@@ -11,6 +11,8 @@
 
 namespace lneng {
 
+using namespace std::chrono_literals;
+
 class Node : public Transformable {
  public:
   Node() = default;
@@ -34,6 +36,9 @@ class Node : public Transformable {
   auto Destroy() -> void;
   [[nodiscard]] auto IsAlive() const -> bool;
 
+  auto ScheduleTask(std::function<void()> task,
+                    std::chrono::milliseconds delay = 0ms) -> void;
+
  protected:
   auto UpdateSubTree() -> void;
   auto DrawSubTree(SceneInfo& out) -> void;
@@ -55,6 +60,14 @@ class Node : public Transformable {
   Node* parent_ = nullptr;
   std::vector<std::unique_ptr<Node>> children_;
   bool isAlive_ = true;
+
+  struct ScheduledTask {
+    std::chrono::steady_clock::time_point startTime;
+    std::function<void()> task;
+    bool fired{};
+  };
+  std::vector<ScheduledTask> scheduledTasks_;
+  auto runScheduledTasks() -> void;
 };
 
 }  // namespace lneng

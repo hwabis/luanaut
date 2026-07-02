@@ -10,15 +10,22 @@ constexpr int defaultZFar = 1000;
 Camera::Camera(float fovDeg) : fovDeg_(fovDeg) {}
 
 auto Camera::Draw(SceneInfo& out) -> void {
-  glm::mat4 effective = applyShake(GetWorldTransform());
-  auto viewMat = glm::inverse(effective);
+  glm::mat4 worldTransform = GetWorldTransform();
+
+  if (shake_) {
+    worldTransform = applyShake(worldTransform);
+  }
 
   out.camera = {
-      .viewMat = viewMat,
+      .viewMat = glm::inverse(worldTransform),
       .fovDeg = fovDeg_,
       .zNear = defaultZNear,
       .zFar = defaultZFar,
   };
+}
+
+auto Camera::SetShake(bool shake) -> void {
+  ScheduleTask([this, shake]() { shake_ = shake; });
 }
 
 auto Camera::applyShake(glm::mat4 transform) -> glm::mat4 {

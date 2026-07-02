@@ -57,6 +57,15 @@ class MyAwesomeScene : public lneng::Scene {
                                 skyboxPaths[3], skyboxPaths[4], skyboxPaths[5]);
     auto skyboxNode = std::make_unique<lneng::SkyboxNode>(skybox);
     AddChild(std::move(skyboxNode));
+
+    ScheduleTask([camera]() { camera->SetShake(true); }, 1s);
+    ScheduleTask([camera]() { camera->SetShake(false); }, 3s);
+
+    ScheduleTask(
+        [camera]() {
+          camera->RotateTo(-90.0F, {-1, 0, 0}, 2s, lneng::easeInQuad);
+        },
+        7s);
   }
 };
 // NOLINTEND(readability-magic-numbers)
