@@ -7,6 +7,10 @@ namespace lneng {
 ModelNode::ModelNode(ModelCreateInfo modelInfo)
     : modelInfo_(std::move(modelInfo)) {}
 
+auto ModelNode::GetMaterial() -> MaterialUbo& {
+  return material_;
+}
+
 auto ModelNode::Load() -> void {
   auto* gpuLoader = deps_->Resolve<GpuResourceLoader>();
   pipeline_ = gpuLoader->CreateGpuGraphicsPipeline(GpuGraphicsPipelineInfo{
@@ -24,6 +28,7 @@ auto ModelNode::Draw(SceneInfo& out) -> void {
       .worldTransform = GetWorldTransform(),
       .pipeline = pipeline_,
       .model = model_,
+      .material = material_,
   });
 }
 

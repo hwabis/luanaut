@@ -11,6 +11,10 @@ cbuffer LightUBO : register(b0, space3) {
   int lightCount;
 }
 
+cbuffer MaterialUBO : register(b1, space3) {
+  float crescentMin;
+}
+
 struct VSOutput {
   float4 pos : SV_Position;
   float3 normal : TEXCOORD0;
@@ -22,14 +26,18 @@ static const float3 AMBIENT = float3(0.1, 0.1, 0.1);
 
 float4 fragMain(VSOutput input) : SV_Target {
   float4 albedo = albedoTex.Sample(albedoSampler, input.uv);
-
   float3 normal = normalize(input.normal);
   float3 result = AMBIENT;
+  float3 hotspot = float3(0, 0, 0);
 
   for (int i = 0; i < lightCount; i++) {
     float diffuse = max(dot(normal, normalize(-lights[i].direction)), 0.0);
     result += lights[i].color * diffuse;
+
+    float crescent = smoothstep(crescentMin, 1.0, diffuse);
+    hotspot += lights[i].color * crescent;
   }
 
-  return float4(result * albedo.rgb, albedo.a);
+  float3 lit = result * albedo.rgb;
+  return float4(lit + hotspot, albedo.a);
 }

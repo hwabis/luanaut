@@ -36,6 +36,8 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
       .num_samplers = 0,
       .num_storage_textures = 0,
       .num_storage_buffers = 0,
+      // todo this value is the max of all possible shaders, not the one in
+      // use... eg skybox shader has 0 ubo lol
       .num_uniform_buffers = 2,
       .props = 0,
   };
@@ -54,7 +56,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
       .num_samplers = 1,
       .num_storage_textures = 0,
       .num_storage_buffers = 0,
-      .num_uniform_buffers = 1,
+      .num_uniform_buffers = 2,
       .props = 0,
   };
   SDL_GPUShader* fragShader = SDL_CreateGPUShader(device_, &fragInfo);

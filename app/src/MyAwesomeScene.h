@@ -25,6 +25,7 @@ class MyAwesomeScene : public lneng::Scene {
     auto* duckNodePtr = duckNode.get();
     AddChild(std::move(duckNode));
 
+    duckNodePtr->GetMaterial().crescentMin = 0.5F;
     duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s, lneng::easeOutQuad)
         .ScaleTo({0.5F, 0.5F, 0.5F}, 3s)
         .Delay(1s)
@@ -32,7 +33,7 @@ class MyAwesomeScene : public lneng::Scene {
         .ScaleTo({1.0F, 1.0F, 1.0F}, 500ms);
 
     AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
-        .direction = {0, 0, 1},
+        .direction = {0, -1, 0},
         .color = {1, 1, 1},
     }));
 
