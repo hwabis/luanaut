@@ -21,8 +21,8 @@ target_compile_definitions(luanaut PRIVATE
 
 add_custom_target(copy_app_assets ALL
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${APP_ASSETS_SRC_DIR}/models"
-    "${APP_ASSETS_BIN_DIR}/models"
-  COMMENT "Copying runtime models to binary directory..."
+    "${APP_ASSETS_SRC_DIR}"
+    "${APP_ASSETS_BIN_DIR}"
+  COMMENT "Copying runtime assets to binary directory..."
 )
 add_dependencies(luanaut copy_app_assets)

@@ -7,6 +7,7 @@ find_package(stb REQUIRED)
 
 add_library(lneng
   src/AssetLoader.cc
+  src/AudioLoader.cc
   src/Camera.cc
   src/Game.cc
   src/GpuResourceLoader.cc
@@ -18,6 +19,7 @@ add_library(lneng
   src/SceneManager.cc
   src/SkyboxNode.cc
   src/StbImpl.cc
+  src/Track.cc
   src/Transformable.cc
 )
 

@@ -3,6 +3,7 @@
 #include <SDL3/SDL_gpu.h>
 #include <memory>
 #include "AssetLoader.h"
+#include "AudioLoader.h"
 #include "Clock.h"
 #include "GpuResourceLoader.h"
 #include "Node.h"
@@ -28,6 +29,7 @@ class Game : public Node {
  private:
   Renderer renderer_;
   AssetLoader assetLoader_;
+  AudioLoader audioLoader_;
   GpuResourceLoader gpuResourceLoader_;
   Clock ownedClock_;
   SceneManager* sceneManager_;

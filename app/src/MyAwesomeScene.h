@@ -72,6 +72,13 @@ class MyAwesomeScene : public lneng::Scene {
           camera->RotateTo(-90.0F, {-1, 0, 0}, 2s, lneng::easeInQuad);
         },
         7s);
+
+    auto* audioLoader = deps_->Resolve<lneng::AudioLoader>();
+    auto* track =
+        audioLoader->LoadWav(std::filesystem::path(APP_ASSETS_BIN_DIR) /
+                             "audio" / "Earendel - Palami feat.neur6sia.wav");
+    track->Play();
+    ScheduleTask([track]() { track->Pause(); }, 3s);
   }
 };
 // NOLINTEND(readability-magic-numbers)

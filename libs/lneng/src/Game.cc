@@ -9,6 +9,7 @@ Game::Game(std::unique_ptr<Scene> initialScene)
   clock_ = &ownedClock_;
 
   deps_->Cache(&assetLoader_);
+  deps_->Cache(&audioLoader_);
   deps_->Cache(&gpuResourceLoader_);
 
   auto sceneManager = std::make_unique<SceneManager>(std::move(initialScene));
