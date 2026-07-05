@@ -7,30 +7,52 @@
 #include <SDL3/SDL_main.h>
 #include <lneng/Game.h>
 
-// todo add try/catch everywhere with SDL_Log
-
 auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
     -> SDL_AppResult {
-  if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
+  try {
+    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
+      return SDL_APP_FAILURE;
+    }
+    *appState = new LNENG_GAME_CLASS();
+    return SDL_APP_CONTINUE;
+  } catch (const std::exception& e) {
+    SDL_Log("FATAL (init): %s", e.what());
+    return SDL_APP_FAILURE;
+  } catch (...) {
+    SDL_Log("FATAL (init): unknown exception");
     return SDL_APP_FAILURE;
   }
-  *appState = new LNENG_GAME_CLASS();
-  return SDL_APP_CONTINUE;
 }
 
 auto SDL_AppIterate(void* appState) -> SDL_AppResult {
-  auto* game = static_cast<lneng::Game*>(appState);
-  if (!game->IsAlive()) {
-    return SDL_APP_SUCCESS;
+  try {
+    auto* game = static_cast<lneng::Game*>(appState);
+    if (!game->IsAlive()) {
+      return SDL_APP_SUCCESS;
+    }
+    game->UpdateSubTree();
+    return SDL_APP_CONTINUE;
+  } catch (const std::exception& e) {
+    SDL_Log("FATAL (init): %s", e.what());
+    return SDL_APP_FAILURE;
+  } catch (...) {
+    SDL_Log("FATAL (init): unknown exception");
+    return SDL_APP_FAILURE;
   }
-  game->UpdateSubTree();
-  return SDL_APP_CONTINUE;
 }
 
 auto SDL_AppEvent(void* appState, SDL_Event* event) -> SDL_AppResult {
-  auto* game = static_cast<lneng::Game*>(appState);
-  game->HandleEventSubTree(*event);
-  return SDL_APP_CONTINUE;
+  try {
+    auto* game = static_cast<lneng::Game*>(appState);
+    game->HandleEventSubTree(*event);
+    return SDL_APP_CONTINUE;
+  } catch (const std::exception& e) {
+    SDL_Log("FATAL (init): %s", e.what());
+    return SDL_APP_FAILURE;
+  } catch (...) {
+    SDL_Log("FATAL (init): unknown exception");
+    return SDL_APP_FAILURE;
+  }
 }
 
 auto SDL_AppQuit(void* appState, SDL_AppResult /*result*/) -> void {
