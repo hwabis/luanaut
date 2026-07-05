@@ -1,4 +1,5 @@
 #include "lneng/AssetLoader.h"
+#include <SDL3/SDL_log.h>
 #include <stb_image.h>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
@@ -6,8 +7,10 @@
 
 namespace lneng {
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+// clang-format off
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static, readability-function-cognitive-complexity)
 auto AssetLoader::LoadGlb(const std::filesystem::path& path)
+    // clang-format on
     -> ModelCreateInfo {
   // todo the model caching and stuff should probably live HERE not after ?
   fastgltf::Parser parser;
@@ -27,55 +30,63 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
   result.name = path.stem().string();
 
   for (auto& fgMesh : asset->meshes) {
-    ModelCreateInfo::Mesh meshInfo;
-
     for (auto& primitive : fgMesh.primitives) {
-      size_t initialVtx = meshInfo.vertices.size();
-
-      if (primitive.indicesAccessor.has_value()) {
-        auto& indexAccessor =
-            asset->accessors[primitive.indicesAccessor.value()];
-        meshInfo.indices.reserve(meshInfo.indices.size() + indexAccessor.count);
-        fastgltf::iterateAccessor<uint32_t>(
-            asset.get(), indexAccessor, [&](uint32_t idx) {
-              meshInfo.indices.push_back(idx + initialVtx);
-            });
-      }
+      ModelCreateInfo::Mesh meshInfo;
 
       auto* posAttr = primitive.findAttribute("POSITION");
       if (posAttr == primitive.attributes.end()) {
         continue;
       }
       auto& posAccessor = asset->accessors[posAttr->accessorIndex];
-      meshInfo.vertices.resize(initialVtx + posAccessor.count);
+      meshInfo.vertices.resize(posAccessor.count);
+
       fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
           asset.get(), posAccessor, [&](fastgltf::math::fvec3 pos, size_t idx) {
-            meshInfo.vertices[initialVtx + idx].pos = {pos.x(), pos.y(),
-                                                       pos.z()};
+            meshInfo.vertices[idx].pos = {pos.x(), pos.y(), pos.z()};
           });
 
-      auto* normAttr = primitive.findAttribute("NORMAL");
-      if (normAttr != primitive.attributes.end()) {
+      if (auto* normAttr = primitive.findAttribute("NORMAL");
+          normAttr != primitive.attributes.end()) {
         fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
             asset.get(), asset->accessors[normAttr->accessorIndex],
             [&](fastgltf::math::fvec3 n, size_t idx) {
-              meshInfo.vertices[initialVtx + idx].normal = {n.x(), n.y(),
-                                                            n.z()};
+              meshInfo.vertices[idx].normal = {n.x(), n.y(), n.z()};
             });
       }
 
-      auto* uvAttr = primitive.findAttribute("TEXCOORD_0");
-      if (uvAttr != primitive.attributes.end()) {
+      if (auto* uvAttr = primitive.findAttribute("TEXCOORD_0");
+          uvAttr != primitive.attributes.end()) {
         fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(
             asset.get(), asset->accessors[uvAttr->accessorIndex],
-            // NOLINTNEXTLINE(readability-identifier-length)
             [&](fastgltf::math::fvec2 uv, size_t idx) {
-              meshInfo.vertices[initialVtx + idx].uv = {uv.x(), uv.y()};
+              meshInfo.vertices[idx].uv = {uv.x(), uv.y()};
             });
       }
-    }
 
-    result.meshes.push_back(std::move(meshInfo));
+      if (primitive.indicesAccessor.has_value()) {
+        auto& indexAccessor =
+            asset->accessors[primitive.indicesAccessor.value()];
+        meshInfo.indices.reserve(indexAccessor.count);
+        fastgltf::iterateAccessor<uint32_t>(
+            asset.get(), indexAccessor,
+            [&](uint32_t idx) { meshInfo.indices.push_back(idx); });
+      }
+
+      meshInfo.textureIndex = 0;
+      if (primitive.materialIndex.has_value()) {
+        auto& material = asset->materials[primitive.materialIndex.value()];
+        if (material.pbrData.baseColorTexture.has_value()) {
+          auto& tex =
+              asset->textures[material.pbrData.baseColorTexture->textureIndex];
+          if (tex.imageIndex.has_value()) {
+            meshInfo.textureIndex =
+                static_cast<uint32_t>(tex.imageIndex.value());
+          }
+        }
+      }
+
+      result.meshes.push_back(std::move(meshInfo));
+    }
   }
 
   result.textures.reserve(asset->images.size());

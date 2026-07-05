@@ -140,29 +140,42 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
     }
   }
 
-  if (info.meshes.size() != 1) {
-    // todo remove
-    throw std::runtime_error("CreateModel: only single-mesh models supported");
+  std::vector<Vertex> allVertices;
+  std::vector<uint32_t> allIndices;
+  std::vector<Model::Submesh> submeshes;
+
+  for (const auto& mesh : info.meshes) {
+    auto vertexOffset = static_cast<uint32_t>(allVertices.size());
+    auto firstIndex = static_cast<uint32_t>(allIndices.size());
+
+    allVertices.insert(allVertices.end(), mesh.vertices.begin(),
+                       mesh.vertices.end());
+    for (uint32_t idx : mesh.indices) {
+      allIndices.push_back(idx + vertexOffset);
+    }
+
+    submeshes.push_back({
+        .firstIndex = firstIndex,
+        .indexCount = static_cast<uint32_t>(mesh.indices.size()),
+        .textureIndex = mesh.textureIndex,
+    });
   }
 
-  // todo handles multiple meshes instead of [0]... how will this work ???
   SDL_GPUBufferCreateInfo vboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-      .size =
-          static_cast<Uint32>(info.meshes[0].vertices.size() * sizeof(Vertex)),
+      .size = static_cast<Uint32>(allVertices.size() * sizeof(Vertex)),
       .props = 0,
   };
   SDL_GPUBuffer* vbo = SDL_CreateGPUBuffer(device_, &vboInfo);
-  uploadToBuffer(vbo, info.meshes[0].vertices);
+  uploadToBuffer(vbo, allVertices);
 
   SDL_GPUBufferCreateInfo iboInfo = {
       .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-      .size =
-          static_cast<Uint32>(info.meshes[0].indices.size() * sizeof(uint32_t)),
+      .size = static_cast<Uint32>(allIndices.size() * sizeof(uint32_t)),
       .props = 0,
   };
   SDL_GPUBuffer* ibo = SDL_CreateGPUBuffer(device_, &iboInfo);
-  uploadToBuffer(ibo, info.meshes[0].indices);
+  uploadToBuffer(ibo, allIndices);
 
   std::vector<SdlGpuTextureHandle> assetTextures;
   for (const auto& texInfo : info.textures) {
@@ -197,9 +210,9 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
   auto model = std::make_unique<Model>(Model{
       .vertexBuffer = {device_, vbo},
       .indexBuffer = {device_, ibo},
-      .indexBufferCount = static_cast<Uint32>(info.meshes[0].indices.size()),
       .textures = std::move(assetTextures),
       .samplers = std::move(samplers),
+      .submeshes = std::move(submeshes),
   });
 
   if (!info.name.empty()) {

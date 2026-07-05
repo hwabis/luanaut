@@ -11,6 +11,7 @@ struct ModelCreateInfo {
   struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
+    uint32_t textureIndex{};
   };
 
   std::vector<Mesh> meshes;

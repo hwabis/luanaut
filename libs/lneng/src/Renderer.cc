@@ -131,12 +131,15 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
     SDL_PushGPUFragmentUniformData(cmdBuf, 1, &draw.material,
                                    sizeof(draw.material));
 
-    // todo handle texture vector from material
-    SDL_GPUTextureSamplerBinding bind{.texture = draw.model->textures[0],
-                                      .sampler = draw.model->samplers[0]};
-    SDL_BindGPUFragmentSamplers(pass, 0, &bind, 1);
-    SDL_DrawGPUIndexedPrimitives(pass, draw.model->indexBufferCount, 1, 0, 0,
-                                 0);
+    for (const auto& submesh : draw.model->submeshes) {
+      SDL_GPUTextureSamplerBinding bind{
+          .texture = draw.model->textures[submesh.textureIndex],
+          .sampler = draw.model->samplers[0],
+      };
+      SDL_BindGPUFragmentSamplers(pass, 0, &bind, 1);
+      SDL_DrawGPUIndexedPrimitives(pass, submesh.indexCount, 1,
+                                   submesh.firstIndex, 0, 0);
+    }
   }
 
   SDL_EndGPURenderPass(pass);
