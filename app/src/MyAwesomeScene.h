@@ -22,10 +22,12 @@ class MyAwesomeScene : public lneng::Scene {
         std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
     auto duck = assetLoader->LoadGlb(duckPath);
     auto duckNode = std::make_unique<lneng::ModelNode>(duck);
+    duckNode->GetMaterial().crescentMin = 1.0F;
+    duckNode->GetMaterial().edgeWidth = 0.1F;
+
     auto* duckNodePtr = duckNode.get();
     AddChild(std::move(duckNode));
 
-    duckNodePtr->GetMaterial().crescentMin = 0.5F;
     duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s, lneng::easeOutQuad)
         .ScaleTo({0.5F, 0.5F, 0.5F}, 3s)
         .Delay(1s)
@@ -78,7 +80,7 @@ class MyAwesomeScene : public lneng::Scene {
     auto* track =
         audioLoader->LoadWav(std::filesystem::path(APP_ASSETS_BIN_DIR) /
                              "audio" / "Earendel - Palami feat.neur6sia.wav");
-    track->Play();
+    // track->Play();
     ScheduleTask([track]() { track->Pause(); }, 3s);
   }
 };

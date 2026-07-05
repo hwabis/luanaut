@@ -13,6 +13,7 @@ cbuffer LightUBO : register(b0, space3) {
 
 cbuffer MaterialUBO : register(b1, space3) {
   float crescentMin;
+  float edgeWidth;
 }
 
 struct VSOutput {
@@ -20,6 +21,7 @@ struct VSOutput {
   float3 normal : TEXCOORD0;
   float2 uv : TEXCOORD1;
   float3 color : TEXCOORD2;
+  float3 bary : TEXCOORD3;
 };
 
 static const float3 AMBIENT = float3(0.1, 0.1, 0.1);
@@ -36,6 +38,13 @@ float4 fragMain(VSOutput input) : SV_Target {
 
     float crescent = smoothstep(crescentMin, 1.0, diffuse);
     hotspot += lights[i].color * crescent;
+
+    float glow = 0.0;
+    if (edgeWidth > 0.0) {
+      float edge = min(input.bary.x, min(input.bary.y, input.bary.z));
+      glow = 1.0 - smoothstep(0.0, edgeWidth, edge);
+    }
+    hotspot += float3(1,1,1) * glow;
   }
 
   float3 lit = result * albedo.rgb;

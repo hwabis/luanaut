@@ -17,13 +17,18 @@ struct VSOutput {
   float3 normal : TEXCOORD0;
   float2 uv : TEXCOORD1;
   float3 color : TEXCOORD2;
+  float3 bary : TEXCOORD3;
 };
 
-VSOutput vertMain(VSInput input) {
+VSOutput vertMain(VSInput input, uint vertexId : SV_VertexID) {
   VSOutput output;
   output.pos = mul(mvp, float4(input.pos, 1.0));
   output.normal = mul((float3x3)normalMatrix, input.normal);
   output.uv = input.uv;
   output.color = input.color;
+
+  uint corner = vertexId % 3;
+  output.bary = float3(corner == 0, corner == 1, corner == 2);
+
   return output;
 }

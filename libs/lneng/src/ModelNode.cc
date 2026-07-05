@@ -12,6 +12,14 @@ auto ModelNode::GetMaterial() -> MaterialUbo& {
 }
 
 auto ModelNode::Load() -> void {
+  // todo this is a little hacky. The only way this condition hits is if it's
+  // immediately set after this node is constructed (before Load). Not mid-scene
+  if (material_.edgeWidth > 0.0F) {
+    for (auto& mesh : modelInfo_.meshes) {
+      mesh = ModelCreateInfo::Deindex(mesh);
+    }
+  }
+
   auto* gpuLoader = deps_->Resolve<GpuResourceLoader>();
   pipeline_ = gpuLoader->CreateGpuGraphicsPipeline(GpuGraphicsPipelineInfo{
       .vertShaderAttributes = Vertex::GetAttributes(),
