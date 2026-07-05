@@ -36,6 +36,11 @@ class MainScene : public lneng::Scene {
         .RotateTo(180.0F, glm::vec3(1, 0, 0), 1s)
         .ScaleTo({1.0F, 1.0F, 1.0F}, 500ms);
 
+    auto duckNode2 = std::make_unique<lneng::ModelNode>(duck);
+    auto* duck2Ptr = duckNode2.get();
+    AddChild(std::move(duckNode2));
+    duck2Ptr->MoveTo({50, 0, 0});
+
     AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
         .direction = {0, -1, 0},
         .color = {1, 1, 1},

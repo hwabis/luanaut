@@ -9,6 +9,7 @@ namespace lneng {
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 auto AssetLoader::LoadGlb(const std::filesystem::path& path)
     -> ModelCreateInfo {
+  // todo the model caching and stuff should probably live HERE not after ?
   fastgltf::Parser parser;
 
   auto data = fastgltf::GltfDataBuffer::FromPath(path);

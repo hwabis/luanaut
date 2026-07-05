@@ -7,6 +7,8 @@
 
 namespace lneng {
 
+using namespace std::chrono_literals;
+
 class Transformable {
  public:
   [[nodiscard]] virtual auto GetTransform() -> Transform& = 0;
@@ -14,20 +16,20 @@ class Transformable {
       -> std::chrono::steady_clock::time_point = 0;
 
   auto MoveTo(glm::vec3 target,
-              std::chrono::milliseconds duration,
+              std::chrono::milliseconds duration = 0ms,
               std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
   auto ScaleTo(glm::vec3 target,
-               std::chrono::milliseconds duration,
+               std::chrono::milliseconds duration = 0ms,
                std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
   auto RotateTo(glm::quat target,
-                std::chrono::milliseconds duration,
+                std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
   auto RotateTo(float degrees,
                 glm::vec3 axis,
-                std::chrono::milliseconds duration,
+                std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
   auto Delay(std::chrono::milliseconds duration) -> Transformable&;

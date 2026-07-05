@@ -3,10 +3,19 @@
 namespace lneng {
 
 auto Node::Destroy() -> void {
+  RemoveAllChildren();
+
   isAlive_ = false;
 }
 
 auto Node::GetNow() -> std::chrono::steady_clock::time_point {
+  if (clock_ == nullptr) {
+    // todo support pre-AddChild
+    throw std::runtime_error(
+        "Node::GetNow called before node was added to the scene tree "
+        "(clock not yet wired). Call AddChild before tweening/scheduling.");
+  }
+
   return clock_->now;
 }
 
@@ -71,6 +80,12 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   node->Load();
 
   children_.push_back(std::move(node));
+}
+
+auto Node::RemoveAllChildren() -> void {
+  for (auto& child : children_) {
+    child->Destroy();
+  }
 }
 
 auto Node::IsAlive() const -> bool {

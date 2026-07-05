@@ -7,6 +7,8 @@
 #include <SDL3/SDL_main.h>
 #include <lneng/Game.h>
 
+// todo add try/catch everywhere with SDL_Log
+
 auto SDL_AppInit(void** appState, int /*argc*/, char** /*argv*/)
     -> SDL_AppResult {
   if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
