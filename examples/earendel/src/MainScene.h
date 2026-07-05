@@ -8,12 +8,14 @@
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
 
+namespace erdl {
+
 using namespace std::chrono_literals;
 
 // NOLINTBEGIN(readability-magic-numbers)
-class MyAwesomeScene : public lneng::Scene {
+class MainScene : public lneng::Scene {
  public:
-  MyAwesomeScene() : Scene(lneng::Transform{.position = {0, 100, -300}}, 60) {}
+  MainScene() : Scene(lneng::Transform{.position = {0, 100, -300}}, 60) {}
 
   auto LoadScene() -> void override {
     auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
@@ -85,3 +87,5 @@ class MyAwesomeScene : public lneng::Scene {
   }
 };
 // NOLINTEND(readability-magic-numbers)
+
+}  // namespace erdl

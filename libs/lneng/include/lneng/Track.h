@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL3/SDL_audio.h>
+#include <chrono>
 #include <filesystem>
+#include <optional>
 
 namespace lneng {
 
@@ -20,6 +22,12 @@ class Track {
   // auto Stop() -> void;
   // auto Seek(std::chrono::milliseconds pos) -> void;
   // [[nodiscard]] auto GetPosition() const -> std::chrono::milliseconds;
+
+  struct Timing {
+    float bpm{};
+    std::chrono::milliseconds offset{};
+  };
+  std::optional<Timing> timing;
 
  private:
   SDL_AudioSpec spec_;

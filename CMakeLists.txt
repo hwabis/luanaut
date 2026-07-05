@@ -5,5 +5,5 @@ project(
   LANGUAGES CXX
 )
 
-add_subdirectory(app)
+add_subdirectory(examples)
 add_subdirectory(libs)
