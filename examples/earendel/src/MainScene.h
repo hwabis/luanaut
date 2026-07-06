@@ -20,26 +20,26 @@ class MainScene : public lneng::Scene {
   auto LoadScene() -> void override {
     auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
 
-    // std::filesystem::path duckPath =
-    //     std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
-    // auto duck = assetLoader->LoadGlb(duckPath);
-    // auto duckNode = std::make_unique<lneng::ModelNode>(duck);
-    // duckNode->GetMaterial().crescentMin = 1.0F;
-    // duckNode->GetMaterial().edgeWidth = 0.1F;
+    std::filesystem::path duckPath =
+        std::filesystem::path(APP_ASSETS_BIN_DIR) / "models" / "Duck.glb";
+    auto duck = assetLoader->LoadGlb(duckPath);
+    auto duckNode = std::make_unique<lneng::ModelNode>(duck);
+    duckNode->GetMaterial().crescentMin = 1.0F;
+    duckNode->GetMaterial().edgeWidth = 0.1F;
 
-    // auto* duckNodePtr = duckNode.get();
-    // AddChild(std::move(duckNode));
+    auto* duckNodePtr = duckNode.get();
+    AddChild(std::move(duckNode));
 
-    // duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s, lneng::easeOutQuad)
-    //     .ScaleTo({0.5F, 0.5F, 0.5F}, 3s)
-    //     .Delay(1s)
-    //     .RotateTo(180.0F, glm::vec3(1, 0, 0), 1s)
-    //     .ScaleTo({1.0F, 1.0F, 1.0F}, 500ms);
+    duckNodePtr->RotateTo(180.0F, glm::vec3(0, 1, 0), 2s, lneng::easeOutQuad)
+        .ScaleTo({0.5F, 0.5F, 0.5F}, 3s)
+        .Delay(1s)
+        .RotateTo(180.0F, glm::vec3(1, 0, 0), 1s)
+        .ScaleTo({1.0F, 1.0F, 1.0F}, 500ms);
 
-    // auto duckNode2 = std::make_unique<lneng::ModelNode>(duck);
-    // auto* duck2Ptr = duckNode2.get();
-    // AddChild(std::move(duckNode2));
-    // duck2Ptr->MoveTo({50, 0, 0});
+    auto duckNode2 = std::make_unique<lneng::ModelNode>(duck);
+    auto* duck2Ptr = duckNode2.get();
+    AddChild(std::move(duckNode2));
+    duck2Ptr->MoveTo({200, 0, 100});
 
     AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
         .direction = {0, -1, 0},

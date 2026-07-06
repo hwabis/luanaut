@@ -58,6 +58,7 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
           uvAttr != primitive.attributes.end()) {
         fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(
             asset.get(), asset->accessors[uvAttr->accessorIndex],
+            // NOLINTNEXTLINE(readability-identifier-length)
             [&](fastgltf::math::fvec2 uv, size_t idx) {
               meshInfo.vertices[idx].uv = {uv.x(), uv.y()};
             });
@@ -70,6 +71,8 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
         fastgltf::iterateAccessor<uint32_t>(
             asset.get(), indexAccessor,
             [&](uint32_t idx) { meshInfo.indices.push_back(idx); });
+      } else {
+        throw std::runtime_error("Non-indexed primitives not supported");
       }
 
       meshInfo.textureIndex = 0;

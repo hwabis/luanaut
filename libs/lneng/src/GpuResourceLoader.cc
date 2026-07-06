@@ -151,7 +151,7 @@ auto GpuResourceLoader::CreateModel(const ModelCreateInfo& info) -> Model* {
     allVertices.insert(allVertices.end(), mesh.vertices.begin(),
                        mesh.vertices.end());
     for (uint32_t idx : mesh.indices) {
-      allIndices.push_back(idx + vertexOffset);
+      allIndices.push_back(vertexOffset + idx);
     }
 
     submeshes.push_back({
