@@ -46,7 +46,7 @@ class Tween : public ATween {
         easingFunc_(std::move(easingFunc)) {}
 
   auto Apply(std::chrono::steady_clock::time_point now) -> void override {
-    if (now <= startTime_) {
+    if (now < startTime_) {
       applyFunc_(startValue_);
       return;
     }
