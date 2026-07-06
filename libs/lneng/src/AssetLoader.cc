@@ -29,6 +29,9 @@ auto AssetLoader::LoadGlb(const std::filesystem::path& path)
   ModelCreateInfo result;
   result.name = path.stem().string();
 
+  // todo this correctly converts/flattens all the model's vertices but doesn't
+  // account transforms in any of the model's nodes. so eg some assets you
+  // have to manually scale to huge amount if model has nodes with big scale
   for (auto& fgMesh : asset->meshes) {
     for (auto& primitive : fgMesh.primitives) {
       ModelCreateInfo::Mesh meshInfo;
