@@ -53,6 +53,7 @@ class Node : public Transformable {
   std::unique_ptr<DependencyContainer> deps_ =
       std::make_unique<DependencyContainer>();
 
+  // Member for performance reasons. Otherwise this would only live in deps
   Clock* clock_ = nullptr;
 
  private:

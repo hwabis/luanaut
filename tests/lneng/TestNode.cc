@@ -3,15 +3,69 @@
 #include <gtest/gtest.h>
 
 namespace lneng {
+namespace {
 
-TEST(NodeTest, DefaultConstructedNodeIsAlive) {
-  Node node;
-  EXPECT_TRUE(node.IsAlive());
+// NOLINTBEGIN(readability-magic-numbers)
+
+class TestRoot : public Node {
+ public:
+  TestRoot() {
+    clock_ = &clock;
+    deps_->Cache(&clock);
+  }
+
+  using Node::UpdateSubTree;
+  void Advance(std::chrono::milliseconds duration) { clock.now += duration; }
+
+ private:
+  Clock clock;
+};
+
+TEST(TweenTest, ZeroDurationSnapsToTarget) {
+  TestRoot root;
+
+  auto child = std::make_unique<Node>();
+  auto* ptr = child.get();
+  root.AddChild(std::move(child));
+
+  ptr->MoveTo({5, 0, 0});
+  root.UpdateSubTree();
+
+  EXPECT_FLOAT_EQ(ptr->GetTransform().position.x, 5.0F);
 }
 
-TEST(NodeTest, DefaultConstructedNodeHasNoParent) {
-  Node node;
-  EXPECT_EQ(node.GetParent(), nullptr);
+TEST(SchedulerTest, ScheduledAddInsertsChild) {
+  TestRoot root;
+  auto container = std::make_unique<Node>();
+  auto* containerPtr = container.get();
+  root.AddChild(std::move(container));
+
+  containerPtr->ScheduleTask(
+      [containerPtr] { containerPtr->AddChild(std::make_unique<Node>()); },
+      100ms);
+
+  EXPECT_EQ(containerPtr->GetChildren().size(), 0);
+  root.Advance(150ms);
+  root.UpdateSubTree();
+  EXPECT_EQ(containerPtr->GetChildren().size(), 1);
 }
 
+TEST(SchedulerTest, ScheduledDestroyRemovesChild) {
+  TestRoot root;
+  auto child = std::make_unique<Node>();
+  auto* childPtr = child.get();
+  root.AddChild(std::move(child));
+
+  childPtr->ScheduleTask([childPtr] { childPtr->Destroy(); }, 100ms);
+
+  EXPECT_EQ(root.GetChildren().size(), 1);
+  root.Advance(150ms);
+  root.UpdateSubTree();
+  root.UpdateSubTree();  // sweep pass
+  EXPECT_EQ(root.GetChildren().size(), 0);
+}
+
+// NOLINTEND(readability-magic-numbers)
+
+}  // namespace
 }  // namespace lneng
