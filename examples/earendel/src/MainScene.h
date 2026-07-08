@@ -41,6 +41,17 @@ class MainScene : public lneng::Scene {
     AddChild(std::move(duckNode2));
     duck2Ptr->MoveTo({200, 0, 100});
 
+    ScheduleTask(
+        [this, duck]() {
+          auto duckNode3 = std::make_unique<lneng::ModelNode>(duck);
+          auto* duck3Ptr = duckNode3.get();
+          AddChild(std::move(duckNode3));
+          duck3Ptr->MoveTo({-200, 0, 100}, 500ms);
+        },
+        2000ms);
+
+    ScheduleTask([this]() { ClearChildren(); }, 8s);
+
     AddChild(std::make_unique<lneng::LightNode>(lneng::LightInfo{
         .direction = {0, -1, 0},
         .color = {1, 1, 1},

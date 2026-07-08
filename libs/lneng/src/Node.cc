@@ -3,7 +3,7 @@
 namespace lneng {
 
 auto Node::Destroy() -> void {
-  RemoveAllChildren();
+  ClearChildren();
   scheduledTasks_.clear();
   ClearTweens();
   isAlive_ = false;
@@ -82,7 +82,7 @@ auto Node::AddChild(std::unique_ptr<Node> node) -> void {
   children_.push_back(std::move(node));
 }
 
-auto Node::RemoveAllChildren() -> void {
+auto Node::ClearChildren() -> void {
   for (auto& child : children_) {
     child->Destroy();
   }

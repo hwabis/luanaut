@@ -32,7 +32,7 @@ class Node : public Transformable {
   [[nodiscard]] auto GetChildren() const
       -> const std::vector<std::unique_ptr<Node>>&;
   auto AddChild(std::unique_ptr<Node> node) -> void;
-  auto RemoveAllChildren() -> void;
+  auto ClearChildren() -> void;
 
   auto Destroy() -> void;
   [[nodiscard]] auto IsAlive() const -> bool;
