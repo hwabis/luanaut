@@ -35,7 +35,8 @@ class Transformable {
   auto Delay(std::chrono::milliseconds duration) -> Transformable&;
   auto Then() -> Transformable&;
 
-  auto UpdateTransforms(std::chrono::steady_clock::time_point now) -> void;
+  auto UpdateTweens(std::chrono::steady_clock::time_point now) -> void;
+  auto ClearTweens() -> void;
 
  private:
   auto ensureCursor() -> void;

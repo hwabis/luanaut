@@ -85,7 +85,7 @@ auto Transformable::Then() -> Transformable& {
   return Delay(0ms);
 }
 
-auto Transformable::UpdateTransforms(std::chrono::steady_clock::time_point now)
+auto Transformable::UpdateTweens(std::chrono::steady_clock::time_point now)
     -> void {
   for (auto& tween : tweens_) {
     if (tween->IsActive(now) || tween->IsComplete(now)) {
@@ -94,6 +94,10 @@ auto Transformable::UpdateTransforms(std::chrono::steady_clock::time_point now)
   }
   std::erase_if(tweens_,
                 [now](const auto& tween) { return tween->IsComplete(now); });
+}
+
+auto Transformable::ClearTweens() -> void {
+  tweens_.clear();
 }
 
 auto Transformable::ensureCursor() -> void {

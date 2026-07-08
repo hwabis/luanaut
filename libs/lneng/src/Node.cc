@@ -4,7 +4,8 @@ namespace lneng {
 
 auto Node::Destroy() -> void {
   RemoveAllChildren();
-
+  scheduledTasks_.clear();
+  ClearTweens();
   isAlive_ = false;
 }
 
@@ -36,7 +37,7 @@ auto Node::UpdateSubTree() -> void {
                         ? transform.ToMatrix()
                         : parent_->worldTransform_ * transform.ToMatrix();
 
-  UpdateTransforms(clock_->now);
+  UpdateTweens(clock_->now);
   runScheduledTasks();
 
   Update();
