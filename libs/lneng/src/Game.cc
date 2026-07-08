@@ -7,7 +7,7 @@ namespace lneng {
 Game::Game(std::unique_ptr<Scene> initialScene)
     : gpuResourceLoader_(renderer_.GetWindow(), renderer_.GetDevice()) {
   clock_ = &ownedClock_;
-
+  deps_->Cache(&ownedClock_);
   deps_->Cache(&assetLoader_);
   deps_->Cache(&audioLoader_);
   deps_->Cache(&gpuResourceLoader_);
