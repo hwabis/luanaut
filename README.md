@@ -1,3 +1,11 @@
+## Luanaut
+
+This is a general purpose game engine, but written with 3D motion graphics and sequential keyframing in mind. Think Blender, but code-only (or like [Manim](https://github.com/manimCommunity/manim) or [storybrew](https://github.com/Damnae/storybrew)).
+
+Check out the [examples folder](https://github.com/hwabis/luanaut/tree/master/examples).
+
+This is not related to the Lua programming language 🙂
+
 ### Building
 
 Install [Vulkan SDK](https://vulkan.lunarg.com/) (for the dxc shader compiler). Then run:
