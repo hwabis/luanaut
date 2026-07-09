@@ -73,6 +73,16 @@ auto Transformable::RotateTo(float degrees,
                   duration, std::move(easingFunc));
 }
 
+auto Transformable::RotateBy(float degrees,
+                             glm::vec3 axis,
+                             std::chrono::milliseconds duration,
+                             std::function<double(double)> easingFunc)
+    -> Transformable& {
+  glm::quat delta = glm::angleAxis(glm::radians(degrees), glm::normalize(axis));
+  glm::quat start = latestRot_.value_or(GetTransform().rotation);
+  return RotateTo(start * delta, duration, std::move(easingFunc));
+}
+
 auto Transformable::Delay(std::chrono::milliseconds duration)
     -> Transformable& {
   ensureCursor();

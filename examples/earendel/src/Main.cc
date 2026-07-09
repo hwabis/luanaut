@@ -1,9 +1,9 @@
-#include "MainScene.h"
+#include "EarendelScene.h"
 
-class ErdlGame : public lneng::Game {
+class EarendelGame : public lneng::Game {
  public:
-  ErdlGame() : lneng::Game(std::make_unique<erdl::MainScene>()) {}
+  EarendelGame() : lneng::Game(std::make_unique<erdl::EarendelScene>()) {}
 };
 
-#define LNENG_GAME_CLASS ErdlGame
+#define LNENG_GAME_CLASS EarendelGame
 #include <lneng/EntryPoint.h>

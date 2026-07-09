@@ -23,12 +23,6 @@ class Track {
   // auto Seek(std::chrono::milliseconds pos) -> void;
   // [[nodiscard]] auto GetPosition() const -> std::chrono::milliseconds;
 
-  struct Timing {
-    float bpm{};
-    std::chrono::milliseconds offset{};
-  };
-  std::optional<Timing> timing;
-
  private:
   SDL_AudioSpec spec_;
   Uint8* buffer_;

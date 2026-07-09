@@ -32,6 +32,11 @@ class Transformable {
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
       -> Transformable&;
+  auto RotateBy(float degrees,
+                glm::vec3 axis,
+                std::chrono::milliseconds duration = 0ms,
+                std::function<double(double)> easingFunc = easeLinear)
+      -> Transformable&;
   auto Delay(std::chrono::milliseconds duration) -> Transformable&;
   auto Then() -> Transformable&;
 
