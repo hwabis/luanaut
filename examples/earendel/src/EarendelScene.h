@@ -44,14 +44,16 @@ class EarendelScene : public lneng::Scene {
         (3 * beatDuration) + 160ms;
 
     ScheduleTask(
-        [currentSceneNodePtr]() {
-          currentSceneNodePtr->AddChild(std::make_unique<Clip0To32>());
+        [currentSceneNodePtr, beatDuration]() {
+          currentSceneNodePtr->AddChild(
+              std::make_unique<Clip0To32>(beatDuration));
         },
         trackFirstBeat);
     ScheduleTask(
-        [currentSceneNodePtr]() {
+        [currentSceneNodePtr, beatDuration]() {
           currentSceneNodePtr->ClearChildren();
-          currentSceneNodePtr->AddChild(std::make_unique<Clip0To32>());
+          currentSceneNodePtr->AddChild(
+              std::make_unique<Clip0To32>(beatDuration));
         },
         trackFirstBeat + beatDuration * 32);
 
