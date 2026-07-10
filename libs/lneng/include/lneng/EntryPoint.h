@@ -1,5 +1,6 @@
 #pragma once
 #ifndef LNENG_GAME_CLASS
+// todo HOW DO I PROPERLY GET RID OF THIS RED SQUIGGLE IN IDEs
 #error "Define LNENG_GAME_CLASS before including EntryPoint.h"
 #endif
 

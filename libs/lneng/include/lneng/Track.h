@@ -1,8 +1,6 @@
 #pragma once
 #include <SDL3/SDL_audio.h>
-#include <chrono>
 #include <filesystem>
-#include <optional>
 
 namespace lneng {
 

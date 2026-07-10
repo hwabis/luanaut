@@ -252,12 +252,14 @@ auto GpuResourceLoader::CreateSkybox(SkyboxCreateInfo& info) -> Skybox* {
       .props = 0};
 
   SDL_GPUTexture* texture = SDL_CreateGPUTexture(device_, &texCreateInfo);
+  // NOLINTBEGIN(readability-magic-numbers)
   uploadToTexture(texture, info.textureXPos, 0);
   uploadToTexture(texture, info.textureXNeg, 1);
   uploadToTexture(texture, info.textureYPos, 2);
   uploadToTexture(texture, info.textureYNeg, 3);
   uploadToTexture(texture, info.textureZPos, 4);
   uploadToTexture(texture, info.textureZNeg, 5);
+  // NOLINTEND(readability-magic-numbers)
 
   SDL_GPUSamplerCreateInfo samplerInfo{};
   samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
