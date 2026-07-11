@@ -1,6 +1,7 @@
 #pragma once
 #include <lneng/AssetLoader.h>
 #include <lneng/Camera.h>
+#include <lneng/FullscreenNode.h>
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
@@ -15,13 +16,16 @@ using namespace std::chrono_literals;
 // NOLINTBEGIN(readability-magic-numbers)
 class Clip0To32 : public lneng::Scene {
  public:
-  Clip0To32(std::chrono::milliseconds beatDuration)
+  Clip0To32(std::chrono::milliseconds trackStartOffset,
+            std::chrono::milliseconds beatDuration)
       : Scene(lneng::Transform{.position = {0, 0, 0}}, 60),
+        trackStartOffset_(trackStartOffset),
         beatDuration_(beatDuration) {}
 
   auto LoadScene() -> void override {
     // todo for this scene (actually every scene basically):
     // bloom, floating billboards
+    // the giant intro bloom from 0 to trackStartOffset
 
     auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
     auto* camera = deps_->Resolve<lneng::Camera>();
@@ -43,10 +47,19 @@ class Clip0To32 : public lneng::Scene {
     earthPtr->RotateBy(20, {0, -1, 0}, beatDuration_ * 32);
 
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -500}; },
-                 beatDuration_ * 16);
+                 trackStartOffset_ + beatDuration_ * 16);
+
+    // todo remove this testing flashbang everyone
+    ScheduleTask(
+        [this]() {
+          auto fsNode = std::make_unique<lneng::FullscreenNode>();
+          AddChild(std::move(fsNode));
+        },
+        trackStartOffset_ + beatDuration_ * 4);
   }
 
  private:
+  std::chrono::milliseconds trackStartOffset_;
   std::chrono::milliseconds beatDuration_;
 };
 // NOLINTEND(readability-magic-numbers)

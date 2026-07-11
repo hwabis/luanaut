@@ -142,6 +142,13 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
     }
   }
 
+  for (const auto& fullscreen : scene.fullscreens) {
+    SDL_BindGPUGraphicsPipeline(pass, *fullscreen.pipeline);
+    SDL_PushGPUFragmentUniformData(cmdBuf, 0, &fullscreen.fadeColor,
+                                   sizeof(fullscreen.fadeColor));
+    SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+  }
+
   SDL_EndGPURenderPass(pass);
   SDL_SubmitGPUCommandBuffer(cmdBuf);
 }

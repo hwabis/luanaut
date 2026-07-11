@@ -20,6 +20,11 @@ auto FullscreenNode::Load() -> void {
   });
 }
 
-auto FullscreenNode::Draw(SceneInfo& out) -> void {}
+auto FullscreenNode::Draw(SceneInfo& out) -> void {
+  out.fullscreens.push_back({
+      .pipeline = pipeline_,
+      .fadeColor = fadeColor_,
+  });
+}
 
 }  // namespace lneng

@@ -2,6 +2,7 @@
 #include <optional>
 #include "CameraInfo.h"
 #include "DrawInfo.h"
+#include "FullscreenInfo.h"
 #include "LightInfo.h"
 #include "SkyboxInfo.h"
 
@@ -12,6 +13,7 @@ struct SceneInfo {
   std::vector<LightInfo> lights;
   CameraInfo camera;
   std::optional<SkyboxInfo> skybox;
+  std::vector<FullscreenInfo> fullscreens;
 };
 
 }  // namespace lneng

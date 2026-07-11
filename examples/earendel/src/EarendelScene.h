@@ -40,22 +40,23 @@ class EarendelScene : public lneng::Scene {
     constexpr auto beatDuration =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::duration<float, std::milli>(60000.0F / trackBpm));
-    constexpr std::chrono::milliseconds trackFirstBeat =
+    constexpr std::chrono::milliseconds trackStartOffset =
         (3 * beatDuration) + 160ms;
 
     ScheduleTask(
-        [currentSceneNodePtr, beatDuration]() {
+        [currentSceneNodePtr, trackStartOffset, beatDuration]() {
           currentSceneNodePtr->AddChild(
-              std::make_unique<Clip0To32>(beatDuration));
+              std::make_unique<Clip0To32>(trackStartOffset, beatDuration));
         },
-        trackFirstBeat);
-    ScheduleTask(
-        [currentSceneNodePtr, beatDuration]() {
-          currentSceneNodePtr->ClearChildren();
-          currentSceneNodePtr->AddChild(
-              std::make_unique<Clip0To32>(beatDuration));
-        },
-        trackFirstBeat + beatDuration * 32);
+        0ms);
+    // todo
+    // ScheduleTask(
+    //     [currentSceneNodePtr, beatDuration]() {
+    //       currentSceneNodePtr->ClearChildren();
+    //       currentSceneNodePtr->AddChild(
+    //           std::make_unique<Clip0To32>(beatDuration));
+    //     },
+    //     trackStartOffset + beatDuration * 32);
 
     auto* audioLoader = deps_->Resolve<lneng::AudioLoader>();
     auto* track =

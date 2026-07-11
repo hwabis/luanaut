@@ -9,6 +9,7 @@ add_library(lneng
   src/AssetLoader.cc
   src/AudioLoader.cc
   src/Camera.cc
+  src/FullscreenNode.cc
   src/Game.cc
   src/GpuResourceLoader.cc
   src/LightNode.cc
