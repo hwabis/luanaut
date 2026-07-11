@@ -1,13 +1,12 @@
-#include "lneng/Transformable.h"
+#include "lneng/Tweenable.h"
 
 namespace lneng {
 
 using namespace std::chrono_literals;
 
-auto Transformable::MoveTo(glm::vec3 target,
-                           std::chrono::milliseconds duration,
-                           std::function<double(double)> easingFunc)
-    -> Transformable& {
+auto Tweenable::MoveTo(glm::vec3 target,
+                       std::chrono::milliseconds duration,
+                       std::function<double(double)> easingFunc) -> Tweenable& {
   ensureCursor();
   if (!latestPos_.has_value()) {
     latestPos_ = GetTransform().position;
@@ -24,10 +23,10 @@ auto Transformable::MoveTo(glm::vec3 target,
   return *this;
 }
 
-auto Transformable::ScaleTo(glm::vec3 target,
-                            std::chrono::milliseconds duration,
-                            std::function<double(double)> easingFunc)
-    -> Transformable& {
+auto Tweenable::ScaleTo(glm::vec3 target,
+                        std::chrono::milliseconds duration,
+                        std::function<double(double)> easingFunc)
+    -> Tweenable& {
   ensureCursor();
   if (!latestScale_.has_value()) {
     latestScale_ = GetTransform().scale;
@@ -44,10 +43,10 @@ auto Transformable::ScaleTo(glm::vec3 target,
   return *this;
 }
 
-auto Transformable::RotateTo(glm::quat target,
-                             std::chrono::milliseconds duration,
-                             std::function<double(double)> easingFunc)
-    -> Transformable& {
+auto Tweenable::RotateTo(glm::quat target,
+                         std::chrono::milliseconds duration,
+                         std::function<double(double)> easingFunc)
+    -> Tweenable& {
   ensureCursor();
   if (!latestRot_.has_value()) {
     latestRot_ = GetTransform().rotation;
@@ -64,38 +63,37 @@ auto Transformable::RotateTo(glm::quat target,
   return *this;
 }
 
-auto Transformable::RotateTo(float degrees,
-                             glm::vec3 axis,
-                             std::chrono::milliseconds duration,
-                             std::function<double(double)> easingFunc)
-    -> Transformable& {
+auto Tweenable::RotateTo(float degrees,
+                         glm::vec3 axis,
+                         std::chrono::milliseconds duration,
+                         std::function<double(double)> easingFunc)
+    -> Tweenable& {
   return RotateTo(glm::angleAxis(glm::radians(degrees), glm::normalize(axis)),
                   duration, std::move(easingFunc));
 }
 
-auto Transformable::RotateBy(float degrees,
-                             glm::vec3 axis,
-                             std::chrono::milliseconds duration,
-                             std::function<double(double)> easingFunc)
-    -> Transformable& {
+auto Tweenable::RotateBy(float degrees,
+                         glm::vec3 axis,
+                         std::chrono::milliseconds duration,
+                         std::function<double(double)> easingFunc)
+    -> Tweenable& {
   glm::quat delta = glm::angleAxis(glm::radians(degrees), glm::normalize(axis));
   glm::quat start = latestRot_.value_or(GetTransform().rotation);
   return RotateTo(start * delta, duration, std::move(easingFunc));
 }
 
-auto Transformable::Delay(std::chrono::milliseconds duration)
-    -> Transformable& {
+auto Tweenable::Delay(std::chrono::milliseconds duration) -> Tweenable& {
   ensureCursor();
   *cursor_ += currentGroupDuration_ + duration;
   currentGroupDuration_ = 0ms;
   return *this;
 }
 
-auto Transformable::Then() -> Transformable& {
+auto Tweenable::Then() -> Tweenable& {
   return Delay(0ms);
 }
 
-auto Transformable::UpdateTweens(std::chrono::steady_clock::time_point now)
+auto Tweenable::UpdateTweens(std::chrono::steady_clock::time_point now)
     -> void {
   for (auto& tween : tweens_) {
     if (tween->IsActive(now) || tween->IsComplete(now)) {
@@ -106,11 +104,11 @@ auto Transformable::UpdateTweens(std::chrono::steady_clock::time_point now)
                 [now](const auto& tween) { return tween->IsComplete(now); });
 }
 
-auto Transformable::ClearTweens() -> void {
+auto Tweenable::ClearTweens() -> void {
   tweens_.clear();
 }
 
-auto Transformable::ensureCursor() -> void {
+auto Tweenable::ensureCursor() -> void {
   auto now = GetNow();
   if (!cursor_.has_value() || *cursor_ < now) {
     cursor_ = now;

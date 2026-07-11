@@ -7,13 +7,13 @@
 #include "DependencyContainer.h"
 #include "SceneInfo.h"
 #include "Transform.h"
-#include "Transformable.h"
+#include "Tweenable.h"
 
 namespace lneng {
 
 using namespace std::chrono_literals;
 
-class Node : public Transformable {
+class Node : public Tweenable {
  public:
   Node() = default;
   virtual ~Node() = default;

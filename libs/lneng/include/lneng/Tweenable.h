@@ -9,7 +9,7 @@ namespace lneng {
 
 using namespace std::chrono_literals;
 
-class Transformable {
+class Tweenable {
  public:
   [[nodiscard]] virtual auto GetTransform() -> Transform& = 0;
   [[nodiscard]] virtual auto GetNow()
@@ -18,27 +18,27 @@ class Transformable {
   auto MoveTo(glm::vec3 target,
               std::chrono::milliseconds duration = 0ms,
               std::function<double(double)> easingFunc = easeLinear)
-      -> Transformable&;
+      -> Tweenable&;
   auto ScaleTo(glm::vec3 target,
                std::chrono::milliseconds duration = 0ms,
                std::function<double(double)> easingFunc = easeLinear)
-      -> Transformable&;
+      -> Tweenable&;
   auto RotateTo(glm::quat target,
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
-      -> Transformable&;
+      -> Tweenable&;
   auto RotateTo(float degrees,
                 glm::vec3 axis,
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
-      -> Transformable&;
+      -> Tweenable&;
   auto RotateBy(float degrees,
                 glm::vec3 axis,
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
-      -> Transformable&;
-  auto Delay(std::chrono::milliseconds duration) -> Transformable&;
-  auto Then() -> Transformable&;
+      -> Tweenable&;
+  auto Delay(std::chrono::milliseconds duration) -> Tweenable&;
+  auto Then() -> Tweenable&;
 
   auto UpdateTweens(std::chrono::steady_clock::time_point now) -> void;
   auto ClearTweens() -> void;

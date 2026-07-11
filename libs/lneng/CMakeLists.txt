@@ -21,7 +21,7 @@ add_library(lneng
   src/SkyboxNode.cc
   src/StbImpl.cc
   src/Track.cc
-  src/Transformable.cc
+  src/Tweenable.cc
 )
 
 set_target_defaults(lneng)
