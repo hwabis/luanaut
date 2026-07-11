@@ -3,7 +3,6 @@
 #include <fstream>
 #include <stdexcept>
 #include "lneng/SdlHandles.h"
-#include "lneng/SkyboxVertex.h"
 
 namespace lneng {
 
@@ -66,9 +65,7 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
 
   SDL_GPUVertexBufferDescription vertDesc = {
       .slot = 0,
-      // smelly
-      .pitch = static_cast<Uint32>(info.isSkybox ? sizeof(SkyboxVertex)
-                                                 : sizeof(Vertex)),
+      .pitch = info.sizeOfVertex,
       .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
       .instance_step_rate = 0,
   };
@@ -83,22 +80,28 @@ auto GpuResourceLoader::CreateGpuGraphicsPipeline(
 
   SDL_GPURasterizerState rasterizerState = {};
   rasterizerState.fill_mode = SDL_GPU_FILLMODE_FILL;
-  rasterizerState.cull_mode =
-      info.isSkybox ? SDL_GPU_CULLMODE_NONE : SDL_GPU_CULLMODE_BACK;
+  rasterizerState.cull_mode = info.cullMode;
   rasterizerState.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
 
   SDL_GPUMultisampleState multisampleState = {};
   multisampleState.sample_count = SDL_GPU_SAMPLECOUNT_1;
 
-  SDL_GPUDepthStencilState depthStencilState = {};
-  depthStencilState.compare_op =
-      info.isSkybox ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL : SDL_GPU_COMPAREOP_LESS;
-  depthStencilState.enable_depth_test = true;
-  depthStencilState.enable_depth_write = !info.isSkybox;
+  SDL_GPUDepthStencilState depthStencilState = info.depthStencilState;
+
+  SDL_GPUColorTargetBlendState blend{};
+  if (info.enableBlend) {
+    blend.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+    blend.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    blend.color_blend_op = SDL_GPU_BLENDOP_ADD;
+    blend.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+    blend.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    blend.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
+    blend.enable_blend = true;
+  };
 
   SDL_GPUColorTargetDescription colorTargetDesc{
       .format = SDL_GetGPUSwapchainTextureFormat(device_, window_),
-      .blend_state = {},
+      .blend_state = blend,
   };
 
   SDL_GPUGraphicsPipelineTargetInfo targetInfo = {};

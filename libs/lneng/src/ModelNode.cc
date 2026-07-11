@@ -20,13 +20,22 @@ auto ModelNode::Load() -> void {
     }
   }
 
+  SDL_GPUDepthStencilState depthStencilState{};
+  depthStencilState.compare_op = SDL_GPU_COMPAREOP_LESS;
+  depthStencilState.enable_depth_test = true;
+  depthStencilState.enable_depth_write = true;
+
   auto* gpuLoader = deps_->Resolve<GpuResourceLoader>();
   pipeline_ = gpuLoader->CreateGpuGraphicsPipeline(GpuGraphicsPipelineInfo{
       .vertShaderAttributes = Vertex::GetAttributes(),
+      .sizeOfVertex = sizeof(Vertex),
       .vertShaderPath = std::filesystem::path(LNENG_ASSETS_BIN_DIR) /
                         "shaders" / "default.vert.spv",
       .fragShaderPath = std::filesystem::path(LNENG_ASSETS_BIN_DIR) /
                         "shaders" / "default.frag.spv",
+      .cullMode = SDL_GPU_CULLMODE_BACK,
+      .depthStencilState = depthStencilState,
+      .enableBlend = false,
   });
   model_ = gpuLoader->CreateModel(modelInfo_);
 }
