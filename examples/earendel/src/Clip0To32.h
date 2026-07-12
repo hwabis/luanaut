@@ -1,6 +1,7 @@
 #pragma once
 #include <lneng/AssetLoader.h>
 #include <lneng/Camera.h>
+#include <lneng/Easings.h>
 #include <lneng/FullscreenNode.h>
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
@@ -57,8 +58,7 @@ class Clip0To32 : public lneng::Scene {
           AddChild(std::move(fsNode));
 
           // todo we need Destroy() to be chainable
-          fsPtr->FadeTo(0.5, 3s).Then().FadeTo(0);
-          // todo right now fadeTo on a model does nothing
+          fsPtr->FadeTo(0.9, 3s, lneng::easeInQuad).Then().FadeTo(0);
           earthPtr->FadeTo(0.5, 3s);
         },
         trackStartOffset_ + beatDuration_ * 4);

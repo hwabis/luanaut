@@ -56,7 +56,6 @@ class Node : public Tweenable {
 
   // Member for performance reasons. Otherwise this would only live in deps
   Clock* clock_ = nullptr;
-  float alpha_{};
 
  private:
   Transform transform_;
@@ -64,6 +63,10 @@ class Node : public Tweenable {
   Node* parent_ = nullptr;
   std::vector<std::unique_ptr<Node>> children_;
   bool isAlive_ = true;
+
+  // todo right now fadeTo on a model does nothing.
+  // only works on fullscreen node
+  float alpha_{};
 
   struct ScheduledTask {
     std::chrono::steady_clock::time_point startTime;
