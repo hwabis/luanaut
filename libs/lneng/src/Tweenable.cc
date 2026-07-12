@@ -82,6 +82,24 @@ auto Tweenable::RotateBy(float degrees,
   return RotateTo(start * delta, duration, std::move(easingFunc));
 }
 
+auto Tweenable::FadeTo(float target,
+                       std::chrono::milliseconds duration,
+                       std::function<double(double)> easingFunc) -> Tweenable& {
+  ensureCursor();
+
+  if (!latestAlpha_.has_value()) {
+    latestAlpha_ = GetAlpha();
+  }
+
+  tweens_.push_back(std::make_unique<FloatTween>(
+      *cursor_, *cursor_ + duration, *latestAlpha_, target,
+      [this](float current) { GetAlpha() = current; }, std::move(easingFunc)));
+
+  latestAlpha_ = target;
+  currentGroupDuration_ = std::max(duration, currentGroupDuration_);
+  return *this;
+}
+
 auto Tweenable::Delay(std::chrono::milliseconds duration) -> Tweenable& {
   ensureCursor();
   *cursor_ += currentGroupDuration_ + duration;

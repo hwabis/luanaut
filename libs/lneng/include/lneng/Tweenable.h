@@ -12,6 +12,7 @@ using namespace std::chrono_literals;
 class Tweenable {
  public:
   [[nodiscard]] virtual auto GetTransform() -> Transform& = 0;
+  [[nodiscard]] virtual auto GetAlpha() -> float& = 0;
   [[nodiscard]] virtual auto GetNow()
       -> std::chrono::steady_clock::time_point = 0;
 
@@ -37,6 +38,10 @@ class Tweenable {
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
       -> Tweenable&;
+  auto FadeTo(float target,
+              std::chrono::milliseconds duration = 0ms,
+              std::function<double(double)> easingFunc = lneng::easeLinear)
+      -> Tweenable&;
   auto Delay(std::chrono::milliseconds duration) -> Tweenable&;
   auto Then() -> Tweenable&;
 
@@ -53,6 +58,7 @@ class Tweenable {
   std::optional<glm::vec3> latestPos_;
   std::optional<glm::vec3> latestScale_;
   std::optional<glm::quat> latestRot_;
+  std::optional<float> latestAlpha_;
 };
 
 }  // namespace lneng

@@ -74,6 +74,18 @@ class Tween : public ATween {
   std::function<double(double)> easingFunc_;
 };
 
+class FloatTween : public Tween<float> {
+ public:
+  using Tween<float>::Tween;
+
+ protected:
+  auto Interpolate(float startValue, float endValue, double progress)
+      -> float override {
+    return startValue +
+           ((endValue - startValue) * static_cast<float>(progress));
+  }
+};
+
 class Vec3Tween : public Tween<glm::vec3> {
  public:
   using Tween<glm::vec3>::Tween;

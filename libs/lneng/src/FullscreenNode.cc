@@ -21,9 +21,9 @@ auto FullscreenNode::Load() -> void {
 }
 
 auto FullscreenNode::Draw(SceneInfo& out) -> void {
-  out.fullscreens.push_back({
+  out.fullscreens.push_back(FullscreenInfo{
       .pipeline = pipeline_,
-      .fadeColor = fadeColor_,
+      .fadeColor = glm::vec4(fadeColor_, GetAlpha()),
   });
 }
 

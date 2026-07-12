@@ -25,6 +25,7 @@ class Node : public Tweenable {
 
   [[nodiscard]] auto GetNow() -> std::chrono::steady_clock::time_point override;
   [[nodiscard]] auto GetTransform() -> Transform& override;
+  [[nodiscard]] auto GetAlpha() -> float& override;
 
   [[nodiscard]] auto GetParent() const -> Node*;
   [[nodiscard]] auto GetWorldTransform() const -> glm::mat4x4;
@@ -55,9 +56,10 @@ class Node : public Tweenable {
 
   // Member for performance reasons. Otherwise this would only live in deps
   Clock* clock_ = nullptr;
+  float alpha_{};
 
  private:
-  Transform transform;
+  Transform transform_;
   glm::mat4x4 worldTransform_{1.0F};
   Node* parent_ = nullptr;
   std::vector<std::unique_ptr<Node>> children_;

@@ -21,7 +21,11 @@ auto Node::GetNow() -> std::chrono::steady_clock::time_point {
 }
 
 auto Node::GetTransform() -> Transform& {
-  return transform;
+  return transform_;
+}
+
+auto Node::GetAlpha() -> float& {
+  return alpha_;
 }
 
 auto Node::GetParent() const -> Node* {
@@ -34,8 +38,8 @@ auto Node::GetWorldTransform() const -> glm::mat4x4 {
 
 auto Node::UpdateSubTree() -> void {
   worldTransform_ = parent_ == nullptr
-                        ? transform.ToMatrix()
-                        : parent_->worldTransform_ * transform.ToMatrix();
+                        ? transform_.ToMatrix()
+                        : parent_->worldTransform_ * transform_.ToMatrix();
 
   UpdateTweens(clock_->now);
   runScheduledTasks();

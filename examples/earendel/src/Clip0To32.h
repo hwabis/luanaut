@@ -51,9 +51,15 @@ class Clip0To32 : public lneng::Scene {
 
     // todo remove this testing flashbang everyone
     ScheduleTask(
-        [this]() {
+        [this, earthPtr]() {
           auto fsNode = std::make_unique<lneng::FullscreenNode>();
+          auto* fsPtr = fsNode.get();
           AddChild(std::move(fsNode));
+
+          // todo we need Destroy() to be chainable
+          fsPtr->FadeTo(0.5, 3s).Then().FadeTo(0);
+          // todo right now fadeTo on a model does nothing
+          earthPtr->FadeTo(0.5, 3s);
         },
         trackStartOffset_ + beatDuration_ * 4);
   }
