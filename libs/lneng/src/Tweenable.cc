@@ -134,6 +134,7 @@ auto Tweenable::ensureCursor() -> void {
     latestPos_.reset();
     latestScale_.reset();
     latestRot_.reset();
+    latestAlpha_.reset();
   }
 }
 

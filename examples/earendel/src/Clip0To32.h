@@ -15,10 +15,10 @@ namespace erdl {
 using namespace std::chrono_literals;
 
 // NOLINTBEGIN(readability-magic-numbers)
-class Clip0To32 : public lneng::Scene {
+class ClipStartTo32 : public lneng::Scene {
  public:
-  Clip0To32(std::chrono::milliseconds trackStartOffset,
-            std::chrono::milliseconds beatDuration)
+  ClipStartTo32(std::chrono::milliseconds trackStartOffset,
+                std::chrono::milliseconds beatDuration)
       : Scene(lneng::Transform{.position = {0, 0, 0}}, 60),
         trackStartOffset_(trackStartOffset),
         beatDuration_(beatDuration) {}
