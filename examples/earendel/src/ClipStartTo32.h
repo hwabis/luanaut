@@ -50,18 +50,29 @@ class ClipStartTo32 : public lneng::Scene {
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -500}; },
                  trackStartOffset_ + beatDuration_ * 16);
 
-    // todo remove this testing flashbang everyone
-    ScheduleTask(
-        [this, earthPtr]() {
-          auto fsNode = std::make_unique<lneng::FullscreenNode>();
-          auto* fsPtr = fsNode.get();
-          AddChild(std::move(fsNode));
+    auto blackFsNode =
+        std::make_unique<lneng::FullscreenNode>(glm::vec3{0, 0, 0});
+    auto* blackFsPtr = blackFsNode.get();
+    AddChild(std::move(blackFsNode));
+    blackFsPtr->FadeTo(1).Delay(trackStartOffset_).FadeTo(0);
+    // TODO THEN DESTROY
 
-          // todo we need Destroy() to be chainable
-          fsPtr->FadeTo(0.9, 3s, lneng::easeInQuad).Then().FadeTo(0);
-          earthPtr->FadeTo(0.5, 3s);
+    auto whiteFsNode =
+        std::make_unique<lneng::FullscreenNode>(glm::vec3{1, 1, 1});
+    auto* whiteFsPtr = whiteFsNode.get();
+    AddChild(std::move(whiteFsNode));
+    whiteFsPtr->FadeTo(0);
+
+    // todo this should really be the bloom thing not a fullscreen
+    // whatever it's good enough
+    ScheduleTask(
+        [this, whiteFsPtr]() {
+          whiteFsPtr->FadeTo(1, beatDuration_ / 2, lneng::easeLinear)
+              .Then()
+              .FadeTo(0, beatDuration_ * 2, lneng::easeInQuad);
+          // TODO THEN DESTROY
         },
-        trackStartOffset_ + beatDuration_ * 4);
+        trackStartOffset_ - beatDuration_ / 2);
   }
 
  private:

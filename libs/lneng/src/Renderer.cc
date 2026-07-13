@@ -44,7 +44,7 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
 
   SDL_GPUColorTargetInfo colorTarget{};
   colorTarget.texture = swapchainTexture;
-  colorTarget.clear_color = {.r = 0, .g = 0, .b = 0, .a = 1},
+  colorTarget.clear_color = {.r = 0, .g = 0, .b = 0, .a = 1};
   colorTarget.load_op = SDL_GPU_LOADOP_CLEAR;
   colorTarget.store_op = SDL_GPU_STOREOP_STORE;
 

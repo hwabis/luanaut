@@ -4,6 +4,8 @@
 
 namespace lneng {
 
+FullscreenNode::FullscreenNode(glm::vec3 fadeColor) : fadeColor_(fadeColor) {}
+
 auto FullscreenNode::Load() -> void {
   auto* gpuLoader = deps_->Resolve<GpuResourceLoader>();
 

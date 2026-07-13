@@ -4,7 +4,7 @@
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
 #include <chrono>
-#include "Clip0To32.h"
+#include "ClipStartTo32.h"
 
 namespace erdl {
 
@@ -46,7 +46,7 @@ class EarendelScene : public lneng::Scene {
     ScheduleTask(
         [currentSceneNodePtr, trackStartOffset, beatDuration]() {
           currentSceneNodePtr->AddChild(
-              std::make_unique<Clip0To32>(trackStartOffset, beatDuration));
+              std::make_unique<ClipStartTo32>(trackStartOffset, beatDuration));
         },
         0ms);
     // todo
