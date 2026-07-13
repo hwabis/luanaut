@@ -54,8 +54,9 @@ class ClipStartTo32 : public lneng::Scene {
         std::make_unique<lneng::FullscreenNode>(glm::vec3{0, 0, 0});
     auto* blackFsPtr = blackFsNode.get();
     AddChild(std::move(blackFsNode));
-    blackFsPtr->FadeTo(1).Delay(trackStartOffset_).FadeTo(0);
-    // TODO THEN DESTROY
+    blackFsPtr->FadeTo(1).Delay(trackStartOffset_).Call([blackFsPtr]() {
+      blackFsPtr->Destroy();
+    });
 
     auto whiteFsNode =
         std::make_unique<lneng::FullscreenNode>(glm::vec3{1, 1, 1});
@@ -69,8 +70,9 @@ class ClipStartTo32 : public lneng::Scene {
         [this, whiteFsPtr]() {
           whiteFsPtr->FadeTo(1, beatDuration_ / 2, lneng::easeLinear)
               .Then()
-              .FadeTo(0, beatDuration_ * 2, lneng::easeInQuad);
-          // TODO THEN DESTROY
+              .FadeTo(0, beatDuration_ * 2, lneng::easeInQuad)
+              .Then()
+              .Call([whiteFsPtr]() { whiteFsPtr->Destroy(); });
         },
         trackStartOffset_ - beatDuration_ / 2);
   }

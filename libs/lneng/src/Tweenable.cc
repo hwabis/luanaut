@@ -100,6 +100,13 @@ auto Tweenable::FadeTo(float target,
   return *this;
 }
 
+auto Tweenable::Call(std::function<void()> action) -> Tweenable& {
+  ensureCursor();
+  timedActions_.push_back(
+      {.time = *cursor_, .action = std::move(action), .fired = false});
+  return *this;
+}
+
 auto Tweenable::Delay(std::chrono::milliseconds duration) -> Tweenable& {
   ensureCursor();
   *cursor_ += currentGroupDuration_ + duration;
@@ -120,10 +127,20 @@ auto Tweenable::UpdateTweens(std::chrono::steady_clock::time_point now)
   }
   std::erase_if(tweens_,
                 [now](const auto& tween) { return tween->IsComplete(now); });
+
+  runTimedActions();
 }
 
 auto Tweenable::ClearTweens() -> void {
   tweens_.clear();
+}
+
+// todo rename ScheduleAction
+auto Tweenable::ScheduleTask(std::function<void()> task,
+                             std::chrono::milliseconds delay) -> void {
+  auto when = GetNow() + delay;
+  timedActions_.push_back(
+      TimedAction{.time = when, .action = std::move(task), .fired = false});
 }
 
 auto Tweenable::ensureCursor() -> void {
@@ -135,6 +152,23 @@ auto Tweenable::ensureCursor() -> void {
     latestScale_.reset();
     latestRot_.reset();
     latestAlpha_.reset();
+  }
+}
+
+auto Tweenable::runTimedActions() -> void {
+  auto now = GetNow();
+
+  std::vector<std::function<void()>> due;
+  for (auto& action : timedActions_) {
+    if (!action.fired && now >= action.time) {
+      action.fired = true;
+      due.push_back(action.action);
+    }
+  }
+  std::erase_if(timedActions_, [](const auto& action) { return action.fired; });
+
+  for (auto& action : due) {
+    action();
   }
 }
 

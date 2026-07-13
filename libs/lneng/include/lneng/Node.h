@@ -38,9 +38,6 @@ class Node : public Tweenable {
   auto Destroy() -> void;
   [[nodiscard]] auto IsAlive() const -> bool;
 
-  auto ScheduleTask(std::function<void()> task,
-                    std::chrono::milliseconds delay = 0ms) -> void;
-
  protected:
   auto UpdateSubTree() -> void;
   auto DrawSubTree(SceneInfo& out) -> void;
@@ -67,14 +64,6 @@ class Node : public Tweenable {
   // todo right now fadeTo on a model does nothing.
   // only works on fullscreen node
   float alpha_{};
-
-  struct ScheduledTask {
-    std::chrono::steady_clock::time_point startTime;
-    std::function<void()> task;
-    bool fired{};
-  };
-  std::vector<ScheduledTask> scheduledTasks_;
-  auto runScheduledTasks() -> void;
 };
 
 }  // namespace lneng
