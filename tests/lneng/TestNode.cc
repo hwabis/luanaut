@@ -34,6 +34,63 @@ TEST(TweenTest, ZeroDurationSnapsToTarget) {
   EXPECT_FLOAT_EQ(ptr->GetTransform().position.x, 5.0F);
 }
 
+TEST(DestroyTest, SweepClearsChildren) {
+  TestRoot root;
+  EXPECT_TRUE(root.IsAlive());
+
+  constexpr int numChildren = 5;
+
+  for (int i = 0; i < numChildren; ++i) {
+    auto child = std::make_unique<Node>();
+    root.AddChild(std::move(child));
+  }
+
+  for (const auto& child : root.GetChildren()) {
+    EXPECT_TRUE(child->IsAlive());
+  }
+
+  root.ClearChildren();
+
+  EXPECT_EQ(root.GetChildren().size(), numChildren);
+  for (const auto& child : root.GetChildren()) {
+    EXPECT_FALSE(child->IsAlive());
+  }
+
+  root.UpdateSubTree();
+  EXPECT_EQ(root.GetChildren().size(), 0);
+
+  root.Destroy();
+  EXPECT_FALSE(root.IsAlive());
+}
+
+TEST(DestroyTest, DeadNodeDoesNotTick) {
+  TestRoot root;
+  auto child = std::make_unique<Node>();
+  auto* ptr = child.get();
+  root.AddChild(std::move(child));
+
+  bool fired = false;
+  ptr->ScheduleTask([&fired]() { fired = true; }, 100ms);
+
+  ptr->Destroy();
+  root.Advance(200ms);
+  root.UpdateSubTree();
+
+  EXPECT_FALSE(fired);
+}
+
+TEST(DestroyTest, SelfDestroyingActionDoesNotCrash) {
+  TestRoot root;
+  auto child = std::make_unique<Node>();
+  auto* ptr = child.get();
+  root.AddChild(std::move(child));
+  ptr->ScheduleTask([ptr]() { ptr->Destroy(); }, 50ms);
+  root.Advance(100ms);
+  root.UpdateSubTree();  // fires the self-destroy — must not crash
+  root.UpdateSubTree();  // sweep
+  EXPECT_EQ(root.GetChildren().size(), 0);
+}
+
 TEST(SchedulerTest, ScheduledAddInsertsChild) {
   TestRoot root;
   auto container = std::make_unique<Node>();

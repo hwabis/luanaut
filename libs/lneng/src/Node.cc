@@ -3,8 +3,6 @@
 namespace lneng {
 
 auto Node::Destroy() -> void {
-  ClearChildren();
-  ClearTweens();
   isAlive_ = false;
 }
 
