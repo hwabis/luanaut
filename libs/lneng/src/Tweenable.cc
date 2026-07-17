@@ -82,6 +82,17 @@ auto Tweenable::RotateBy(float degrees,
   return RotateTo(start * delta, duration, std::move(easingFunc));
 }
 
+auto Tweenable::RotateByWorld(float degrees,
+                              glm::vec3 axis,
+                              std::chrono::milliseconds duration,
+                              std::function<double(double)> easingFunc)
+    -> Tweenable& {
+  glm::quat delta = glm::angleAxis(glm::radians(degrees), glm::normalize(axis));
+  glm::quat start = latestRot_.value_or(GetTransform().rotation);
+  // this is correct but tbh I have no intuition why this works T_T
+  return RotateTo(delta * start, duration, std::move(easingFunc));
+}
+
 auto Tweenable::FadeTo(float target,
                        std::chrono::milliseconds duration,
                        std::function<double(double)> easingFunc) -> Tweenable& {

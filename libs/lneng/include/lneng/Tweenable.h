@@ -38,6 +38,11 @@ class Tweenable {
                 std::chrono::milliseconds duration = 0ms,
                 std::function<double(double)> easingFunc = easeLinear)
       -> Tweenable&;
+  auto RotateByWorld(float degrees,
+                     glm::vec3 axis,
+                     std::chrono::milliseconds duration = 0ms,
+                     std::function<double(double)> easingFunc = easeLinear)
+      -> Tweenable&;
   auto FadeTo(float target,
               std::chrono::milliseconds duration = 0ms,
               std::function<double(double)> easingFunc = lneng::easeLinear)

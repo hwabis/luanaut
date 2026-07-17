@@ -4,6 +4,7 @@
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
 #include <chrono>
+#include "Clip32To48.h"
 #include "ClipStartTo32.h"
 
 namespace erdl {
@@ -43,20 +44,21 @@ class EarendelScene : public lneng::Scene {
     constexpr std::chrono::milliseconds trackStartOffset =
         (3 * beatDuration) + 160ms;
 
+    // todo fix this horrible issue where audio gets way ahead cuz scene assets
+    // take forever to load if not cached in the computer
     ScheduleTask(
         [currentSceneNodePtr, trackStartOffset, beatDuration]() {
           currentSceneNodePtr->AddChild(
               std::make_unique<ClipStartTo32>(trackStartOffset, beatDuration));
         },
         0ms);
-    // todo
-    // ScheduleTask(
-    //     [currentSceneNodePtr, beatDuration]() {
-    //       currentSceneNodePtr->ClearChildren();
-    //       currentSceneNodePtr->AddChild(
-    //           std::make_unique<Clip0To32>(beatDuration));
-    //     },
-    //     trackStartOffset + beatDuration * 32);
+    ScheduleTask(
+        [currentSceneNodePtr, beatDuration]() {
+          currentSceneNodePtr->ClearChildren();
+          currentSceneNodePtr->AddChild(
+              std::make_unique<Clip32To48>(beatDuration));
+        },
+        trackStartOffset + beatDuration * 32);
 
     auto* audioLoader = deps_->Resolve<lneng::AudioLoader>();
     auto* track =

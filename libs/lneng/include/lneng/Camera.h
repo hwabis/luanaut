@@ -7,7 +7,7 @@ class Camera : public Node {
  public:
   // todo adjustable proj matrix
   Camera(float fovDeg);
-  auto SetShake(bool shake) -> void;
+  auto SetShake(bool shake, glm::vec3 amplitude = {1, 1, 1}) -> void;
 
  protected:
   auto Draw(SceneInfo& out) -> void override;
@@ -16,8 +16,9 @@ class Camera : public Node {
   auto applyShake(glm::mat4 transform) -> glm::mat4;
 
   float fovDeg_{};
-  float shakeTime_{};
+
   bool shake_{};
+  glm::vec3 shakeAmplitude_{1, 1, 1};
 };
 
 }  // namespace lneng

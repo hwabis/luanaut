@@ -45,7 +45,7 @@ class ClipStartTo32 : public lneng::Scene {
 
     earthPtr->GetTransform().scale = {300, 300.0, 300};
     earthPtr->GetTransform().position = {0, -300, 500};
-    earthPtr->RotateBy(20, {0, -1, 0}, beatDuration_ * 32);
+    earthPtr->RotateBy(20, {0, -1, 0}, trackStartOffset_ + beatDuration_ * 32);
 
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -500}; },
                  trackStartOffset_ + beatDuration_ * 16);
