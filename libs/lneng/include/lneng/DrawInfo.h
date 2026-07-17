@@ -7,9 +7,9 @@
 namespace lneng {
 
 struct DrawInfo {
-  glm::mat4 worldTransform{1.0F};
-  SdlGpuGraphicsPipelineHandle* pipeline = nullptr;
-  Model* model = nullptr;
+  glm::mat4 worldTransform;
+  SdlGpuGraphicsPipelineHandle* pipeline;
+  Model* model;
   MaterialUbo material;
 };
 

@@ -4,9 +4,9 @@
 namespace lneng {
 
 struct LightInfo {
-  glm::vec3 direction{};
+  glm::vec3 direction;
   float _pad0{};
-  glm::vec3 color{};
+  glm::vec3 color;
   float _pad1{};
 };
 

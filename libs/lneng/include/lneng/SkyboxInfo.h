@@ -5,8 +5,8 @@
 namespace lneng {
 
 struct SkyboxInfo {
-  SdlGpuGraphicsPipelineHandle* pipeline = nullptr;
-  Skybox* skybox = nullptr;
+  SdlGpuGraphicsPipelineHandle* pipeline;
+  Skybox* skybox;
 };
 
 }  // namespace lneng

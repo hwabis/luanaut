@@ -5,8 +5,8 @@
 namespace lneng {
 
 struct FullscreenInfo {
-  SdlGpuGraphicsPipelineHandle* pipeline = nullptr;
-  glm::vec4 fadeColor{0, 0, 0, 0};
+  SdlGpuGraphicsPipelineHandle* pipeline;
+  glm::vec4 fadeColor;
 };
 
 }  // namespace lneng
