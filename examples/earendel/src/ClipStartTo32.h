@@ -10,6 +10,7 @@
 #include <lneng/Scene.h>
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
+#include "Random.h"
 
 namespace erdl {
 
@@ -44,6 +45,40 @@ class ClipStartTo32 : public lneng::Scene {
     earthPtr->GetTransform().position = {0, -300, 500};
     earthPtr->RotateBy(20, {0, -1, 0}, trackStartOffset_ + beatDuration_ * 32);
 
+    constexpr int numParticles = 300;
+    for (int i = 0; i < numParticles; ++i) {
+      auto particleNode = std::make_unique<lneng::ParticleNode>(
+          glm::vec3{1, 1, 1}, 50, GetRandomFloat(0.2F, 1.0F));
+      auto* ptr = particleNode.get();
+      AddChild(std::move(particleNode));
+
+      float progress = static_cast<float>(i) / static_cast<float>(numParticles);
+
+      constexpr float spawnWidth = 5000;
+      // all moving left so this somehow works lol
+      float spawnX = (GetRandomFloat(0, 1) * spawnWidth);
+      float targetX = spawnX - GetRandomFloat(1000, 10000);
+      float totalDistanceX = targetX - spawnX;
+      float prewarmedX = spawnX + (progress * totalDistanceX);
+
+      constexpr float spawnY = -4000;
+      float targetY = GetRandomFloat(1000, 5000);
+      float totalDistanceY = targetY - spawnY;
+      float prewarmedY = spawnY + (progress * totalDistanceY);
+
+      float spawnZ = GetRandomFloat(1000, 3000);
+      ptr->GetTransform().position = {prewarmedX, prewarmedY, spawnZ};
+
+      constexpr int targetDurationMs = 30000;
+      float remainingPercentage = (targetY - prewarmedY) / totalDistanceY;
+      auto duration = std::chrono::milliseconds(
+          static_cast<int>(targetDurationMs * remainingPercentage));
+
+      ptr->MoveTo({targetX, targetY, spawnZ}, duration).Then().Call([ptr]() {
+        ptr->Destroy();
+      });
+    }
+
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -500}; },
                  trackStartOffset_ + beatDuration_ * 16);
 
@@ -72,13 +107,6 @@ class ClipStartTo32 : public lneng::Scene {
               .Call([whiteFsPtr]() { whiteFsPtr->Destroy(); });
         },
         trackStartOffset_ - beatDuration_ / 2);
-
-    auto myAwesomeParticle =
-        std::make_unique<lneng::ParticleNode>(glm::vec3{1, 1, 1}, 5, 0.5F);
-    auto* ptr = myAwesomeParticle.get();
-    AddChild(std::move(myAwesomeParticle));
-    ptr->GetTransform().position = {0, 20, 100};
-    ptr->MoveTo({0, -10, 100}, 3s);
   }
 
  private:

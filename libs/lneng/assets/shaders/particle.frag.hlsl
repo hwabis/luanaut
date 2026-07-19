@@ -6,6 +6,6 @@ struct VSOutput {
 
 float4 fragMain(VSOutput input) : SV_Target {
   float dist = length(input.uv);
-  float alpha = smoothstep(0.5, 0.4, dist) * input.alpha;
+  float alpha = smoothstep(0.5, 0.3, dist) * input.alpha;
   return float4(1, 1, 1, alpha);
 }
