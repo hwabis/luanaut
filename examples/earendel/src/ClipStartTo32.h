@@ -43,7 +43,7 @@ class ClipStartTo32 : public lneng::Scene {
 
     earthPtr->GetTransform().scale = {300, 300.0, 300};
     earthPtr->GetTransform().position = {0, -300, 500};
-    earthPtr->RotateBy(20, {0, -1, 0}, trackStartOffset_ + beatDuration_ * 32);
+    earthPtr->RotateBy(25, {0, -1, 0}, trackStartOffset_ + beatDuration_ * 32);
 
     constexpr int numParticles = 300;
     for (int i = 0; i < numParticles; ++i) {

@@ -22,17 +22,21 @@ struct ModelCreateInfo {
   std::string name;
 
   static auto Deindex(const Mesh& mesh) -> Mesh {
-    Mesh flat;
-
-    flat.vertices.reserve(mesh.indices.size());
+    std::vector<Vertex> vertices;
+    vertices.reserve(mesh.indices.size());
     for (uint32_t idx : mesh.indices) {
-      flat.vertices.push_back(mesh.vertices[idx]);
+      vertices.push_back(mesh.vertices[idx]);
     }
 
-    flat.indices.resize(flat.vertices.size());
-    std::iota(flat.indices.begin(), flat.indices.end(), 0);
+    std::vector<uint32_t> indices;
+    indices.resize(vertices.size());
+    std::iota(indices.begin(), indices.end(), 0);
 
-    return flat;
+    return {
+        .vertices = std::move(vertices),
+        .indices = std::move(indices),
+        .textureIndex = mesh.textureIndex,
+    };
   }
 };
 

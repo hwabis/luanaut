@@ -67,7 +67,7 @@ class Clip32To48 : public lneng::Scene {
         .RotateByWorld(4, glm::vec3(0, 0, 1), beatDuration_ * 8,
                        lneng::easeInOutQuad);
 
-    camera->SetShake(true, {0.3F, 0.3F, 0.3F});
+    camera->SetShake(true, {0.2F, 0.2F, 0.2F});
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -20}; },
                  beatDuration_ * 8);
     ScheduleTask([camera]() { camera->SetShake(false); }, beatDuration_ * 16);
