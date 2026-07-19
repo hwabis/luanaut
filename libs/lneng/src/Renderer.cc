@@ -9,8 +9,8 @@
 namespace lneng {
 
 // todo ?? windowed for now to test resizing
-constexpr int initialWidth = 800;
-constexpr int initialHeight = 600;
+constexpr int initialWidth = 1366;
+constexpr int initialHeight = 768;
 
 Renderer::Renderer()
     : window_(SDL_CreateWindow("lneng",
