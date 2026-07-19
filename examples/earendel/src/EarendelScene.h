@@ -60,11 +60,12 @@ class EarendelScene : public lneng::Scene {
         },
         trackStartOffset + beatDuration * 32);
 
-    auto* audioLoader = deps_->Resolve<lneng::AudioLoader>();
-    auto* track =
-        audioLoader->LoadWav(std::filesystem::path(APP_ASSETS_BIN_DIR) /
-                             "audio" / "Earendel - Palami feat.neur6sia.wav");
-    track->Play();
+    // auto* audioLoader = deps_->Resolve<lneng::AudioLoader>();
+    // auto* track =
+    //     audioLoader->LoadWav(std::filesystem::path(APP_ASSETS_BIN_DIR) /
+    //                          "audio" / "Earendel - Palami
+    //                          feat.neur6sia.wav");
+    // track->Play();
   }
 };
 // NOLINTEND(readability-magic-numbers)

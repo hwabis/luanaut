@@ -4,6 +4,7 @@
 #include "DrawInfo.h"
 #include "FullscreenInfo.h"
 #include "LightInfo.h"
+#include "ParticleInfo.h"
 #include "SkyboxInfo.h"
 
 namespace lneng {
@@ -14,6 +15,7 @@ struct SceneInfo {
   CameraInfo camera;
   std::optional<SkyboxInfo> skybox;
   std::vector<FullscreenInfo> fullscreens;
+  std::vector<ParticleInfo> particles;
 };
 
 }  // namespace lneng

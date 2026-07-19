@@ -15,6 +15,7 @@ add_library(lneng
   src/LightNode.cc
   src/ModelNode.cc
   src/Node.cc
+  src/ParticleNode.cc
   src/Renderer.cc
   src/Scene.cc
   src/SceneManager.cc

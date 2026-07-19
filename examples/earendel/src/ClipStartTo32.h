@@ -6,6 +6,7 @@
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
+#include <lneng/ParticleNode.h>
 #include <lneng/Scene.h>
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
@@ -24,10 +25,6 @@ class ClipStartTo32 : public lneng::Scene {
         beatDuration_(beatDuration) {}
 
   auto LoadScene() -> void override {
-    // todo for this scene (actually every scene basically):
-    // bloom, floating billboards
-    // the giant intro bloom from 0 to trackStartOffset
-
     auto* assetLoader = deps_->Resolve<lneng::AssetLoader>();
     auto* camera = deps_->Resolve<lneng::Camera>();
 
@@ -75,6 +72,13 @@ class ClipStartTo32 : public lneng::Scene {
               .Call([whiteFsPtr]() { whiteFsPtr->Destroy(); });
         },
         trackStartOffset_ - beatDuration_ / 2);
+
+    auto myAwesomeParticle =
+        std::make_unique<lneng::ParticleNode>(glm::vec3{1, 1, 1}, 5, 0.5F);
+    auto* ptr = myAwesomeParticle.get();
+    AddChild(std::move(myAwesomeParticle));
+    ptr->GetTransform().position = {0, 20, 100};
+    ptr->MoveTo({0, -10, 100}, 3s);
   }
 
  private:

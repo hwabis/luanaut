@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
 #include "lneng/LightUbo.h"
+#include "lneng/ParticleUbo.h"
 #include "lneng/SdlHandles.h"
 
 namespace lneng {
@@ -140,6 +141,26 @@ auto Renderer::Draw(const SceneInfo& scene) -> void {
       SDL_DrawGPUIndexedPrimitives(pass, submesh.indexCount, 1,
                                    submesh.firstIndex, 0, 0);
     }
+  }
+
+  for (const auto& particle : scene.particles) {
+    SDL_BindGPUGraphicsPipeline(pass, *particle.pipeline);
+
+    ParticleUbo ubo{
+        .viewProj = proj * scene.camera.viewMat,
+        .cameraRight = {scene.camera.viewMat[0][0], scene.camera.viewMat[1][0],
+                        scene.camera.viewMat[2][0]},
+        .cameraUp = {scene.camera.viewMat[0][1], scene.camera.viewMat[1][1],
+                     scene.camera.viewMat[2][1]},
+        .particleWorldPos = particle.worldPos,
+        .particleColor = particle.color,
+        .particleSize = particle.size,
+        .alpha = particle.alpha,
+    };
+
+    SDL_PushGPUVertexUniformData(cmdBuf, 0, &ubo, sizeof(ParticleUbo));
+    // NOLINTNEXTLINE(readability-magic-numbers)
+    SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
   }
 
   for (const auto& fullscreen : scene.fullscreens) {
