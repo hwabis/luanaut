@@ -6,9 +6,11 @@
 #include <lneng/Game.h>
 #include <lneng/LightNode.h>
 #include <lneng/ModelNode.h>
+#include <lneng/ParticleNode.h>
 #include <lneng/Scene.h>
 #include <lneng/SkyboxNode.h>
 #include <lneng/Transform.h>
+#include "Random.h"
 
 namespace erdl {
 
@@ -71,6 +73,40 @@ class Clip32To48 : public lneng::Scene {
     ScheduleTask([camera]() { camera->GetTransform().position = {0, 0, -20}; },
                  beatDuration_ * 8);
     ScheduleTask([camera]() { camera->SetShake(false); }, beatDuration_ * 16);
+
+    constexpr int numParticles = 300;
+    for (int i = 0; i < numParticles; ++i) {
+      auto particleNode = std::make_unique<lneng::ParticleNode>(
+          glm::vec3{1, 1, 1}, 5, GetRandomFloat(0.2F, 1.0F));
+      auto* ptr = particleNode.get();
+      AddChild(std::move(particleNode));
+
+      float progress = static_cast<float>(i) / static_cast<float>(numParticles);
+
+      constexpr float spawnWidth = 1000;
+      // why is positioning all this so hard lol
+      float spawnX = -spawnWidth + (GetRandomFloat(0, 1) * spawnWidth);
+      float targetX = spawnX + GetRandomFloat(1000, 2000);
+      float totalDistanceX = targetX - spawnX;
+      float prewarmedX = spawnX + (progress * totalDistanceX);
+
+      constexpr float spawnY = -500;
+      float targetY = 500;
+      float totalDistanceY = targetY - spawnY;
+      float prewarmedY = spawnY + (progress * totalDistanceY);
+
+      float spawnZ = GetRandomFloat(100, 300);
+      ptr->GetTransform().position = {prewarmedX, prewarmedY, spawnZ};
+
+      constexpr int targetDurationMs = 30000;
+      float remainingPercentage = (targetY - prewarmedY) / totalDistanceY;
+      auto duration = std::chrono::milliseconds(
+          static_cast<int>(targetDurationMs * remainingPercentage));
+
+      ptr->MoveTo({targetX, targetY, spawnZ}, duration).Then().Call([ptr]() {
+        ptr->Destroy();
+      });
+    }
   }
 
  private:
