@@ -2,7 +2,7 @@
 
 This is a general purpose game engine, but written with 3D motion graphics and sequential keyframing in mind. Think Blender, but code-only (or like [Manim](https://github.com/manimCommunity/manim) or [storybrew](https://github.com/Damnae/storybrew)).
 
-Check out the [examples folder](https://github.com/hwabis/luanaut/tree/master/examples).
+Check out the [examples folder](https://github.com/hwabis/luanaut/tree/master/examples/earendel).
 
 This is not related to the Lua programming language 🙂
 
